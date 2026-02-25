@@ -1,3 +1,4 @@
+
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcryptjs");
@@ -8,30 +9,28 @@ const path = require("path");
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname,"public")));
+app.use(express.static(path.join(__dirname, "public")));
 
 const SECRET = "supersecretkey";
 
 /* ===== DATABASE ===== */
 const db = new sqlite3.Database("./database.db");
 
-db.serialize(()=>{
+db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS admin(
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT,
     password TEXT
   )`);
-  
   db.run(`CREATE TABLE IF NOT EXISTS menu(
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     price INTEGER,
     img TEXT,
     best INTEGER DEFAULT 0
   )`);
-
   db.run(`CREATE TABLE IF NOT EXISTS orders(
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer TEXT,
     type TEXT,
     items TEXT,
@@ -43,27 +42,27 @@ db.serialize(()=>{
 
   db.get("SELECT * FROM admin", [], async (err,row)=>{
     if(!row){
-      const hash = await bcrypt.hash("1234",10);
+      const hash = await bcrypt.hash("1234", 10);
       db.run("INSERT INTO admin(username,password) VALUES(?,?)", ["admin", hash]);
       console.log("Default Admin Created: admin / 1234");
     }
   });
 });
 
-/* ===== AUTH ===== */
+/* ===== AUTH MIDDLEWARE ===== */
 function auth(req,res,next){
   const token = req.headers.authorization;
   if(!token) return res.status(401).json({msg:"No token"});
-  try{jwt.verify(token,SECRET); next();}
-  catch{res.status(400).json({msg:"Invalid token"});}
+  try{ jwt.verify(token, SECRET); next(); }
+  catch{ res.status(400).json({msg:"Invalid token"}); }
 }
 
 /* ===== ROUTES ===== */
-app.get("/", (req,res) => res.sendFile(path.join(__dirname,"public","customerpage.html")));
-app.get("/admin", (req,res) => res.sendFile(path.join(__dirname,"public","adminpage.html")));
+app.get("/", (req,res)=> res.sendFile(path.join(__dirname,"public","customerpage.html")));
+app.get("/menu", (req,res)=> db.all("SELECT * FROM menu",[],(err,rows)=> res.json(rows)));
+app.get("/admin",(req,res)=> res.sendFile(path.join(__dirname,"public","adminpage.html")));
 
-/* LOGIN ADMIN */
-app.post("/login", (req,res)=>{
+app.post("/login",(req,res)=>{
   db.get("SELECT * FROM admin WHERE username=?",[req.body.username], async (err,row)=>{
     if(!row) return res.json({msg:"User not found"});
     const valid = await bcrypt.compare(req.body.password,row.password);
@@ -73,45 +72,35 @@ app.post("/login", (req,res)=>{
   });
 });
 
-/* MENU */
-app.get("/menu",(req,res)=>{
-  db.all("SELECT * FROM menu",(err,rows)=>{
-    rows.forEach(r=>r.best=!!r.best);
-    res.json(rows);
-  });
-});
-
+/* ===== MENU MANAGEMENT ===== */
 app.post("/menu", auth, (req,res)=>{
-  const {name,price,img} = req.body;
-  db.run("INSERT INTO menu(name,price,img) VALUES(?,?,?)",[name,price,img], ()=>res.json({msg:"Menu added"}));
-});
-
-app.post("/menu/best/:id", auth, (req,res)=>{
   const best = req.body.best?1:0;
-  db.run("UPDATE menu SET best=? WHERE id=?",[best,req.params.id], ()=>res.json({msg:"Updated"}));
+  db.run("INSERT INTO menu(name,price,img,best) VALUES(?,?,?,?)",[req.body.name,req.body.price,req.body.img,best],()=>res.json({msg:"Added"}));
 });
-
-app.delete("/menu/:id", auth, (req,res)=>{
-  db.run("DELETE FROM menu WHERE id=?",[req.params.id],()=>res.json({msg:"Deleted"}));
+app.post("/menu/best/:id", auth, (req,res)=>{
+  db.run("UPDATE menu SET best=? WHERE id=?",[req.body.best?1:0,req.params.id],()=>res.json({msg:"Updated"}));
 });
+app.get("/menu", (req,res)=> db.all("SELECT * FROM menu",[],(err,rows)=> res.json(rows)));
+app.delete("/menu/:id", auth, (req,res)=> db.run("DELETE FROM menu WHERE id=?",[req.params.id],()=>res.json({msg:"Deleted"})));
 
-/* ORDERS */
+/* ===== ORDERS ===== */
 app.post("/order",(req,res)=>{
   const {customer,type,items,total,payment} = req.body;
-  db.run("INSERT INTO orders(customer,type,items,total,payment) VALUES(?,?,?,?,?)",
-    [customer,type,JSON.stringify(items),total,payment],()=>res.json({msg:"Order saved"}));
+  db.run("INSERT INTO orders(customer,type,items,total,payment) VALUES(?,?,?,?,?)",[customer,type,JSON.stringify(items),total,payment||"Cash"],()=>res.json({msg:"Order saved"}));
 });
 
 app.get("/orders", auth, (req,res)=>{
-  db.all("SELECT * FROM orders WHERE status='new' ORDER BY createdAt DESC",(err,rows)=>{
+  db.all("SELECT * FROM orders WHERE status='new'",[],(err,rows)=>{
     rows.forEach(r=>r.items=JSON.parse(r.items));
     res.json(rows);
   });
 });
 
 app.post("/order/status/:id", auth, (req,res)=>{
-  db.run("UPDATE orders SET status=? WHERE id=?",[req.body.status,req.params.id],()=>res.json({msg:"Updated"}));
+  const status = req.body.status || "done";
+  db.run("UPDATE orders SET status=? WHERE id=?",[status,req.params.id],()=>res.json({msg:"Updated"}));
 });
 
-const PORT = process.env.PORT||3000;
+/* ===== START SERVER ===== */
+const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=>console.log("Server running on port "+PORT));
