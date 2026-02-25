@@ -9,8 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from root directory
-app.use(express.static(__dirname));
+// ✅ Serve static files from PUBLIC folder
+app.use(express.static(path.join(__dirname, "public")));
 
 const SECRET = "supersecretkey";
 
@@ -49,15 +49,16 @@ db.serialize(() => {
         "INSERT INTO admin(username,password) VALUES(?,?)",
         ["admin", hash]
       );
-      console.log("Default Admin Created: Username: admin, Password: 1234");
+      console.log("Default Admin Created: admin / 1234");
     }
   });
 });
 
-/* ===== AUTH ===== */
+/* ===== AUTH MIDDLEWARE ===== */
 function auth(req, res, next) {
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ msg: "No token" });
+
   try {
     jwt.verify(token, SECRET);
     next();
@@ -66,9 +67,14 @@ function auth(req, res, next) {
   }
 }
 
-/* ===== HOMEPAGE ===== */
+/* ===== HOMEPAGE (QR CODE TARGET) ===== */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "customerpage.html"));
+  res.sendFile(path.join(__dirname, "public", "customerpage.html"));
+});
+
+/* ===== ADMIN PAGE (optional route) ===== */
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
 /* ===== LOGIN ===== */
@@ -78,8 +84,10 @@ app.post("/login", (req, res) => {
     [req.body.username],
     async (err, row) => {
       if (!row) return res.json({ msg: "User not found" });
+
       const valid = await bcrypt.compare(req.body.password, row.password);
       if (!valid) return res.json({ msg: "Wrong password" });
+
       const token = jwt.sign({ id: row.id }, SECRET);
       res.json({ token });
     }
