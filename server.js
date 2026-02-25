@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcryptjs");
@@ -9,21 +10,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from public folder
+// Serve frontend from "public" folder
 app.use(express.static(path.join(__dirname, "public")));
 
 const SECRET = "supersecretkey";
 
-/* ===== DATABASE ===== */
-const db = new sqlite3.Database("./database.db");
+// ================= DATABASE =================
+// Use persistent path for Render
+const db = new sqlite3.Database("/mnt/data/database.db");
 
 db.serialize(() => {
+  // Admin table
   db.run(`CREATE TABLE IF NOT EXISTS admin(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT,
     password TEXT
   )`);
 
+  // Menu table
   db.run(`CREATE TABLE IF NOT EXISTS menu(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
@@ -31,6 +35,7 @@ db.serialize(() => {
     img TEXT
   )`);
 
+  // Orders table
   db.run(`CREATE TABLE IF NOT EXISTS orders(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer TEXT,
@@ -41,20 +46,30 @@ db.serialize(() => {
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Default admin
-  db.get("SELECT * FROM admin", [], async (err, row) => {
+  // Default admin (if not exists)
+  db.get("SELECT * FROM admin LIMIT 1", [], async (err, row) => {
     if (!row) {
       const hash = await bcrypt.hash("1234", 10);
-      db.run(
-        "INSERT INTO admin(username,password) VALUES(?,?)",
-        ["admin", hash]
-      );
+      db.run("INSERT INTO admin(username,password) VALUES(?,?)", ["admin", hash]);
       console.log("Default Admin Created: admin / 1234");
+    }
+  });
+
+  // Default menu items (if empty)
+  db.get("SELECT COUNT(*) AS count FROM menu", [], (err, row) => {
+    if (row.count === 0) {
+      db.run(
+        `INSERT INTO menu(name,price,img) VALUES 
+        ('Espresso',100,'https://via.placeholder.com/60'),
+        ('Latte',150,'https://via.placeholder.com/60'),
+        ('Cappuccino',130,'https://via.placeholder.com/60')`
+      );
+      console.log("Default menu items added");
     }
   });
 });
 
-/* ===== AUTH ===== */
+// ================= AUTH =================
 function auth(req, res, next) {
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ msg: "No token" });
@@ -67,64 +82,59 @@ function auth(req, res, next) {
   }
 }
 
-/* ===== CUSTOMER PAGE (QR CODE) ===== */
+// ================= ROUTES =================
+
+// Serve customer page (QR target)
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "customerpage.html"));
 });
 
-/* ===== ADMIN PAGE ===== */
+// Serve admin page
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "adminpage.html"));
 });
 
-/* ===== LOGIN ===== */
+// ----- LOGIN -----
 app.post("/login", (req, res) => {
-  db.get(
-    "SELECT * FROM admin WHERE username=?",
-    [req.body.username],
-    async (err, row) => {
-      if (!row) return res.json({ msg: "User not found" });
+  db.get("SELECT * FROM admin WHERE username=?", [req.body.username], async (err, row) => {
+    if (!row) return res.json({ msg: "User not found" });
 
-      const valid = await bcrypt.compare(req.body.password, row.password);
-      if (!valid) return res.json({ msg: "Wrong password" });
+    const valid = await bcrypt.compare(req.body.password, row.password);
+    if (!valid) return res.json({ msg: "Wrong password" });
 
-      const token = jwt.sign({ id: row.id }, SECRET);
-      res.json({ token });
-    }
-  );
+    const token = jwt.sign({ id: row.id }, SECRET);
+    res.json({ token });
+  });
 });
 
-/* ===== MENU ===== */
+// ----- CHANGE PASSWORD -----
+app.post("/change-password", auth, (req, res) => {
+  const newPass = req.body.password;
+  bcrypt.hash(newPass, 10, (err, hash) => {
+    db.run("UPDATE admin SET password=? WHERE id=1", [hash], () => res.json({ msg: "Password changed" }));
+  });
+});
+
+// ----- MENU -----
 app.get("/menu", (req, res) => {
   db.all("SELECT * FROM menu", [], (err, rows) => res.json(rows));
 });
 
 app.post("/menu", auth, (req, res) => {
-  db.run(
-    "INSERT INTO menu(name,price,img) VALUES(?,?,?)",
-    [req.body.name, req.body.price, req.body.img],
-    () => res.json({ msg: "Added" })
-  );
+  const { name, price, img } = req.body;
+  db.run("INSERT INTO menu(name,price,img) VALUES(?,?,?)", [name, price, img], () => res.json({ msg: "Menu added" }));
 });
 
 app.delete("/menu/:id", auth, (req, res) => {
-  db.run(
-    "DELETE FROM menu WHERE id=?",
-    [req.params.id],
-    () => res.json({ msg: "Deleted" })
-  );
+  db.run("DELETE FROM menu WHERE id=?", [req.params.id], () => res.json({ msg: "Menu deleted" }));
 });
 
-/* ===== ORDERS ===== */
+// ----- ORDERS -----
 app.post("/order", (req, res) => {
+  const { customer, type, items, total } = req.body;
   db.run(
     "INSERT INTO orders(customer,type,items,total) VALUES(?,?,?,?)",
-    [
-      req.body.customer,
-      req.body.type,
-      JSON.stringify(req.body.items),
-      req.body.total,
-    ],
+    [customer, type, JSON.stringify(items), total],
     () => res.json({ msg: "Order saved" })
   );
 });
@@ -137,27 +147,16 @@ app.get("/orders", auth, (req, res) => {
 });
 
 app.post("/order/done/:id", auth, (req, res) => {
-  db.run(
-    "UPDATE orders SET status='done' WHERE id=?",
-    [req.params.id],
-    () => res.json({ msg: "Done" })
-  );
+  db.run("UPDATE orders SET status='done' WHERE id=?", [req.params.id], () => res.json({ msg: "Order marked done" }));
 });
 
 app.get("/orders-done", auth, (req, res) => {
-  db.all(
-    "SELECT * FROM orders WHERE status='done' ORDER BY createdAt DESC",
-    [],
-    (err, rows) => {
-      rows.forEach((r) => (r.items = JSON.parse(r.items)));
-      res.json(rows);
-    }
-  );
+  db.all("SELECT * FROM orders WHERE status='done' ORDER BY createdAt DESC", [], (err, rows) => {
+    rows.forEach((r) => (r.items = JSON.parse(r.items)));
+    res.json(rows);
+  });
 });
 
-/* ===== START SERVER ===== */
+// ================= START SERVER =================
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
-});
+app.listen(PORT, () => console.log("Server running on port " + PORT));
