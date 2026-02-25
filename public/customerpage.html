@@ -19,72 +19,38 @@ header {
 h1 { margin: 0; font-size: 2rem; }
 p { margin: 5px 0; font-size: 1rem; }
 
-.screen {
-    display: none;
-    padding: 20px;
-    animation: fadeIn 0.5s ease-in-out;
-}
+.screen { display: none; padding: 20px; animation: fadeIn 0.5s ease-in-out; }
 .screen.active { display: block; }
 
-#welcomeScreen {
-    text-align: center;
-}
-#welcomeScreen img {
-    width: 80%;
-    max-width: 300px;
-    border-radius: 15px;
-    margin: 20px 0;
-}
+#welcomeScreen { text-align: center; }
+#welcomeScreen img { width: 80%; max-width: 300px; border-radius: 15px; margin: 20px 0; }
 #welcomeScreen button {
-    background: #3e2723;
-    color: white;
-    border: none;
-    padding: 12px 25px;
-    border-radius: 10px;
-    font-size: 1rem;
-    cursor: pointer;
-    margin-top: 15px;
+    background: #3e2723; color: white; border: none; padding: 12px 25px;
+    border-radius: 10px; font-size: 1rem; cursor: pointer; margin-top: 15px;
 }
 #welcomeScreen button:hover { opacity: 0.9; }
 
-.bestSellers {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
+.bestSellers { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.bestSellers .card { width: 120px; background: white; padding: 10px; border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.1); text-align: center;
 }
-.bestSellers .card {
-    width: 120px;
-    background: white;
-    padding: 10px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,.1);
-    text-align: center;
-}
+.bestSellers .card img { width: 100%; height: 80px; object-fit: cover; border-radius: 8px; }
 
-#orderScreen .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-    gap: 20px;
-}
-.card {
-    background:white;border-radius:15px;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,.1);text-align:center;
-}
-.card img{width:100%;height:150px;object-fit:cover;}
-.card button{background:#c49a6c;color:white;border:none;padding:8px 16px;border-radius:8px;margin:10px 0;cursor:pointer;transition:0.2s;}
-.card button:hover{opacity:0.9;}
+#orderScreen .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 15px; }
+.menu-card { background:white; border-radius:15px; overflow:hidden; box-shadow:0 6px 15px rgba(0,0,0,.1); text-align:center; padding:10px; }
+.menu-card img{width:100%;height:120px;object-fit:cover;border-radius:10px;}
+.menu-card button{background:#c49a6c;color:white;border:none;padding:8px 12px;border-radius:8px;margin:10px 0;cursor:pointer;transition:0.2s;}
+.menu-card button:hover{opacity:0.9;}
+.menu-card button.active{background:#3e2723;}
 
-.cart {
-    background:white;margin:20px;padding:20px;border-radius:15px;box-shadow:0 6px 15px rgba(0,0,0,.1);
-}
+.cart { background:white;margin:20px;padding:20px;border-radius:15px;box-shadow:0 6px 15px rgba(0,0,0,.1); }
 .cart input, .cart button{width:100%;padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;}
 .cart button.active{background:#3e2723;color:white;}
-ul{list-style:none;padding-left:0;}
+.cart ul{list-style:none;padding-left:0;}
+.cart ul li{margin-bottom:8px;}
+.cart ul li button{background:red;color:white;border:none;padding:2px 6px;margin-left:5px;border-radius:5px;cursor:pointer;}
 
-@keyframes fadeIn {
-    from {opacity:0;}
-    to {opacity:1;}
-}
+@keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
 </style>
 </head>
 <body>
@@ -97,27 +63,24 @@ ul{list-style:none;padding-left:0;}
 <!-- ===== WELCOME SCREEN ===== -->
 <div id="welcomeScreen" class="screen active">
     <h1>Welcome to Go Beyond Cafe!</h1>
-    <p>Mabilao, Sanfabian . 8:00am - 9:00pm</p>
-    
-  
-
-     <h2>Go Beyond Cafe Best Sellers</h2>
-   
-    <div class="bestSellers" id="bestSellers">
-        <!-- Best sellers will load here -->
-    </div>
+    <p>Mabilao, Sanfabian · 8:00am - 9:00pm</p>
+    <h2>Best Sellers</h2>
+    <div class="bestSellers" id="bestSellers"></div>
     <button onclick="startOrdering()">Start Order</button>
 </div>
 
-<!-- ===== ORDERING SCREEN ===== -->
+<!-- ===== ORDER SCREEN ===== -->
 <div id="orderScreen" class="screen">
+    <h2>Menu</h2>
     <div class="grid" id="menu"></div>
 
     <div class="cart">
         <h3>Your Order</h3>
-        <input id="name" placeholder="Your Name"><br>
-        <button id="btnDine" onclick="setType('Dine In', this)">Dine In</button>
-        <button id="btnTake" onclick="setType('Take Out', this)">Take Out</button>
+        <input id="name" placeholder="Your Name">
+        <div style="margin:10px 0;">
+            <button id="btnDine" onclick="setType('Dine In', this)">Dine In</button>
+            <button id="btnTake" onclick="setType('Take Out', this)">Take Out</button>
+        </div>
         <ul id="list"></ul>
         <h3>Total: ₱<span id="total">0</span></h3>
         <button onclick="checkout()">Send Order</button>
@@ -133,12 +96,12 @@ function startOrdering(){
     document.getElementById("orderScreen").classList.add("active");
 }
 
-// Load Best Sellers (top 3)
+// Load Best Sellers
 function loadBestSellers(){
     fetch("/menu")
     .then(res=>res.json())
     .then(data=>{
-        menu = data;
+        menu=data;
         const best = menu.slice(0,3);
         const div = document.getElementById("bestSellers");
         div.innerHTML="";
@@ -154,71 +117,76 @@ function loadBestSellers(){
     });
 }
 
-// ===== ORDERING SCREEN =====
+// Load Full Menu
 function loadMenu(){
-  fetch("/menu")
-  .then(res=>res.json())
-  .then(data=>{
-    menu=data;
-    const menuDiv=document.getElementById("menu");
-    menuDiv.innerHTML="";
-    menu.forEach((m,i)=>{
-      menuDiv.innerHTML+=`
-      <div class="card">
-        <img src="${m.img}">
-        <h3>${m.name}</h3>
-        <p>₱${m.price}</p>
-        <button onclick="add(${i}, this)">Add</button>
-      </div>`;
+    fetch("/menu")
+    .then(res=>res.json())
+    .then(data=>{
+        menu=data;
+        const menuDiv=document.getElementById("menu");
+        menuDiv.innerHTML="";
+        menu.forEach((m,i)=>{
+            menuDiv.innerHTML+=`
+            <div class="menu-card">
+                <img src="${m.img}">
+                <h3>${m.name}</h3>
+                <p>₱${m.price}</p>
+                <button onclick="add(${i}, this)">Add</button>
+            </div>`;
+        });
     });
-  });
 }
 
+// Add item to cart
 function add(i, btn){
-  let item=menu[i];
-  let exist=cart.find(x=>x.id===item.id);
-  if(exist) exist.qty++;
-  else cart.push({...item, qty:1});
-  render();
-  btn.classList.add('active');
-  setTimeout(()=>{ btn.classList.remove('active'); },300);
+    let item=menu[i];
+    let exist=cart.find(x=>x.id===item.id);
+    if(exist) exist.qty++;
+    else cart.push({...item, qty:1});
+    render();
+    btn.classList.add('active');
+    setTimeout(()=>{ btn.classList.remove('active'); },300);
 }
 
+// Render cart
 function render(){
-  total=0;
-  let list=document.getElementById("list");
-  list.innerHTML="";
-  cart.forEach((c,i)=>{
-    total+=c.price*c.qty;
-    list.innerHTML+=`<li>${c.name} x${c.qty} <button onclick="removeItem(${i})">X</button></li>`;
-  });
-  document.getElementById("total").innerText=total;
+    total=0;
+    let list=document.getElementById("list");
+    list.innerHTML="";
+    cart.forEach((c,i)=>{
+        total+=c.price*c.qty;
+        list.innerHTML+=`<li>${c.name} x${c.qty} <button onclick="removeItem(${i})">X</button></li>`;
+    });
+    document.getElementById("total").innerText=total;
 }
 
+// Remove from cart
 function removeItem(i){ cart.splice(i,1); render(); }
 
+// Set type
 function setType(t, btn){
-  type=t;
-  document.getElementById("btnDine").classList.remove('active');
-  document.getElementById("btnTake").classList.remove('active');
-  btn.classList.add('active');
+    type=t;
+    document.getElementById("btnDine").classList.remove('active');
+    document.getElementById("btnTake").classList.remove('active');
+    btn.classList.add('active');
 }
 
+// Checkout
 function checkout(){
-  let name=document.getElementById("name").value;
-  if(!name || cart.length==0 || !type){ alert("Complete details"); return; }
-  fetch("/order",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({customer:name, type, items:cart, total})
-  }).then(res=>res.json())
-    .then(()=>{ alert("Order Sent!"); cart=[]; render(); document.getElementById("name").value=""; });
+    let name=document.getElementById("name").value;
+    if(!name || cart.length==0 || !type){ alert("Complete all details"); return; }
+    fetch("/order",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({customer:name,type,items:cart,total})
+    }).then(res=>res.json())
+      .then(()=>{ alert("Order Sent!"); cart=[]; render(); document.getElementById("name").value=""; });
 }
 
-// Load initial data
+// Initialize
 loadBestSellers();
 loadMenu();
-setInterval(loadMenu, 5000);
+setInterval(loadMenu,5000);
 </script>
 
 </body>
