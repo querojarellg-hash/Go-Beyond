@@ -7,53 +7,86 @@
 
 <style>
 body{margin:0;font-family:Poppins,sans-serif;background:#f4f6f9;}
-header{background:#3e2723;color:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;}
-header h2{margin:0;font-weight:600}
+header{
+background:#3e2723;color:white;
+padding:15px 25px;
+display:flex;justify-content:space-between;align-items:center;
+}
 .header-buttons{display:flex;gap:10px}
-
-button{padding:8px 14px;border:none;border-radius:6px;cursor:pointer;font-weight:500}
+button{
+padding:8px 14px;border:none;border-radius:6px;
+cursor:pointer;font-weight:500;
+}
 .primary{background:#3e2723;color:white}
+.gray{background:#9e9e9e;color:white}
 .danger{background:#e53935;color:white}
 .success{background:#4caf50;color:white}
-.gray{background:#9e9e9e;color:white}
 
-.container{padding:20px;max-width:1100px;margin:auto;display:none;}
+.container{
+padding:20px;
+max-width:1100px;
+margin:auto;
+display:none;
+}
 
-.card{background:white;padding:20px;border-radius:12px;margin-bottom:20px;
-box-shadow:0 8px 25px rgba(0,0,0,.07);}
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+margin-bottom:20px;
+box-shadow:0 8px 25px rgba(0,0,0,.08);
+}
 
 input,select{
-padding:10px;margin:5px 0;border-radius:6px;
-border:1px solid #ddd;width:100%;
+padding:10px;margin:6px 0;
+border-radius:6px;
+border:1px solid #ddd;
+width:100%;
 }
 
 .menu-item{
-display:flex;justify-content:space-between;
-align-items:center;margin-bottom:10px;
-padding:10px;border-bottom:1px solid #eee;
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+padding:10px;
+border-bottom:1px solid #eee;
 }
 
 .menu-item img{
 width:60px;height:50px;
-object-fit:cover;border-radius:6px;margin-right:10px;
+object-fit:cover;
+border-radius:6px;
+margin-right:10px;
 }
 
 .flex{display:flex;align-items:center;gap:10px}
 
 .login-card{
-background:white;padding:35px;border-radius:14px;
+background:white;
+padding:35px;
+border-radius:14px;
 box-shadow:0 10px 30px rgba(0,0,0,.1);
-width:320px;margin:120px auto;
+width:320px;
+margin:120px auto;
 text-align:center;
 }
 
 .modal{
-display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.4);justify-content:center;align-items:center;
+display:none;
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,.4);
+justify-content:center;
+align-items:center;
 }
 
 .modal-content{
-background:white;padding:25px;border-radius:12px;width:300px;
+background:white;
+padding:25px;
+border-radius:12px;
+width:300px;
 }
 </style>
 </head>
@@ -76,24 +109,28 @@ background:white;padding:25px;border-radius:12px;width:300px;
 </div>
 
 <!-- DASHBOARD -->
-<div class="container" id="dashboard">
+<div id="dashboard" class="container">
 
+<!-- QR -->
 <div id="qrSection" class="card">
 <h3>📱 Scan to Order</h3>
 <img id="qrImage" width="200"><br><br>
 <button class="primary" onclick="downloadQR()">Save QR Code</button>
 </div>
 
+<!-- NEW ORDERS -->
 <div class="card">
 <h3>🧾 New Orders</h3>
 <div id="orders"></div>
 </div>
 
+<!-- MENU -->
 <div class="card">
 <h3>📋 Menu List</h3>
 <div id="menuList"></div>
 </div>
 
+<!-- ADD MENU -->
 <div id="addSection" class="card">
 <h3>➕ Add Menu Item</h3>
 <input id="name" placeholder="Item Name">
@@ -103,10 +140,11 @@ background:white;padding:25px;border-radius:12px;width:300px;
 <button class="primary" onclick="addMenu()">Add Item</button>
 </div>
 
+<!-- RECORDS -->
 <div id="recordSection" class="card">
 <h3>
-✅ Records 
-<button class="gray" onclick="toggleRecords()">Show / Hide</button>
+✅ Records
+<button class="gray" onclick="toggleRecords()">Show/Hide</button>
 </h3>
 
 <select onchange="filterRecords(this.value)">
@@ -136,17 +174,18 @@ background:white;padding:25px;border-radius:12px;width:300px;
 
 <script>
 let token = localStorage.getItem("token");
-let cleanMode=false;
+let cleanMode = false;
+let doneData = [];
 
 /* LOGIN */
 function login(){
+const username=document.getElementById("username").value;
+const password=document.getElementById("password").value;
+
 fetch("/login",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-username:username.value,
-password:password.value
-})
+body:JSON.stringify({username,password})
 })
 .then(r=>r.json())
 .then(data=>{
@@ -164,50 +203,46 @@ location.reload();
 }
 
 function showDashboard(){
-loginForm.style.display="none";
-dashboard.style.display="block";
+document.getElementById("loginForm").style.display="none";
+document.getElementById("dashboard").style.display="block";
 initDashboard();
 }
 
 /* PROFILE */
-function openProfile(){profileModal.style.display="flex";}
-function closeProfile(){profileModal.style.display="none";}
+function openProfile(){
+document.getElementById("profileModal").style.display="flex";
+}
+function closeProfile(){
+document.getElementById("profileModal").style.display="none";
+}
 
 function changePassword(){
+const newPass=document.getElementById("newPass").value;
 fetch("/change-password",{
 method:"POST",
-headers:{
-"Content-Type":"application/json",
-"Authorization":token
-},
-body:JSON.stringify({password:newPass.value})
+headers:{"Content-Type":"application/json","Authorization":token},
+body:JSON.stringify({password:newPass})
 }).then(()=>alert("Password changed"));
 }
 
 /* CLEAN MODE */
 function toggleClean(){
 cleanMode=!cleanMode;
-qrSection.style.display=cleanMode?"none":"block";
-addSection.style.display=cleanMode?"none":"block";
-recordSection.style.display=cleanMode?"none":"block";
-}
-
-/* RECORD TOGGLE */
-function toggleRecords(){
-doneOrders.style.display=
-doneOrders.style.display==="none"?"block":"none";
+document.getElementById("qrSection").style.display=cleanMode?"none":"block";
+document.getElementById("addSection").style.display=cleanMode?"none":"block";
+document.getElementById("recordSection").style.display=cleanMode?"none":"block";
 }
 
 /* QR */
 function generateQR(){
-qrImage.src=
+document.getElementById("qrImage").src=
 "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+
 encodeURIComponent("https://go-beyond.onrender.com/customerpage.html");
 }
 
 function downloadQR(){
 const link=document.createElement("a");
-link.href=qrImage.src;
+link.href=document.getElementById("qrImage").src;
 link.download="GoBeyondCafe-QR.png";
 link.click();
 }
@@ -217,9 +252,10 @@ function loadMenu(){
 fetch("/menu")
 .then(r=>r.json())
 .then(data=>{
-menuList.innerHTML="";
+const div=document.getElementById("menuList");
+div.innerHTML="";
 data.forEach(item=>{
-menuList.innerHTML+=`
+div.innerHTML+=`
 <div class="menu-item">
 <div class="flex">
 <img src="${item.img}">
@@ -232,21 +268,25 @@ menuList.innerHTML+=`
 
 async function addMenu(){
 let img="";
-if(imgFile.files[0]){
-img=await toBase64(imgFile.files[0]);
-}else if(imgUrl.value){
-img=imgUrl.value;
+if(document.getElementById("imgFile").files[0]){
+img=await toBase64(document.getElementById("imgFile").files[0]);
+}else if(document.getElementById("imgUrl").value){
+img=document.getElementById("imgUrl").value;
 }else{alert("Add image");return;}
 
 fetch("/menu",{
 method:"POST",
 headers:{"Content-Type":"application/json","Authorization":token},
-body:JSON.stringify({name:name.value,price:price.value,img})
+body:JSON.stringify({
+name:document.getElementById("name").value,
+price:document.getElementById("price").value,
+img
+})
 }).then(loadMenu);
 }
 
 function toBase64(file){
-return new Promise((res,rej)=>{
+return new Promise(res=>{
 let reader=new FileReader();
 reader.readAsDataURL(file);
 reader.onload=()=>res(reader.result);
@@ -258,14 +298,12 @@ function loadOrders(){
 fetch("/orders",{headers:{Authorization:token}})
 .then(r=>r.json())
 .then(data=>{
-orders.innerHTML="";
+const div=document.getElementById("orders");
+div.innerHTML="";
 data.forEach(order=>{
-let items="";
-order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`);
-orders.innerHTML+=`
+div.innerHTML+=`
 <div class="card">
-<strong>${order.customer}</strong><br>
-${items}
+<strong>${order.customer}</strong>
 ₱${order.total}
 </div>`;
 });
@@ -276,20 +314,51 @@ function loadDoneOrders(){
 fetch("/orders-done",{headers:{Authorization:token}})
 .then(r=>r.json())
 .then(data=>{
-doneOrders.innerHTML="";
-data.forEach(order=>{
-doneOrders.innerHTML+=`
+doneData=data;
+displayFiltered("all");
+});
+}
+
+function displayFiltered(type){
+const div=document.getElementById("doneOrders");
+div.innerHTML="";
+let now=new Date();
+
+doneData.forEach(order=>{
+let orderDate=new Date(order.date || Date.now());
+let show=true;
+
+if(type==="today"){
+show=orderDate.toDateString()===now.toDateString();
+}
+if(type==="week"){
+let weekAgo=new Date();
+weekAgo.setDate(now.getDate()-7);
+show=orderDate>=weekAgo;
+}
+if(type==="month"){
+let monthAgo=new Date();
+monthAgo.setMonth(now.getMonth()-1);
+show=orderDate>=monthAgo;
+}
+
+if(show){
+div.innerHTML+=`
 <div class="card">
 <strong>${order.customer}</strong>
 ₱${order.total}
 </div>`;
-});
+}
 });
 }
 
-/* FILTER (basic front filter) */
-function filterRecords(type){
-loadDoneOrders(); // you can improve backend filtering later
+function filterRecords(value){
+displayFiltered(value);
+}
+
+function toggleRecords(){
+let section=document.getElementById("doneOrders");
+section.style.display=section.style.display==="none"?"block":"none";
 }
 
 /* INIT */
