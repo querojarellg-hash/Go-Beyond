@@ -14,13 +14,38 @@
 
     /* DASHBOARD */
     #dashboard {display:flex;height:100vh;display:none;}
-    #sidebar {width:70px;background:#3e2723;display:flex;flex-direction:column;align-items:center;padding-top:20px;transition:width 0.3s;}
-    #sidebar.expanded {width:200px;}
-    .sidebar-btn {width:50px;height:50px;margin:10px 0;border:none;border-radius:10px;background:#4e342e;color:white;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;position:relative;transition:all 0.3s;}
+    #sidebar {
+      width:70px;
+      background:#3e2723;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding-top:20px;
+      transition:width 0.3s;
+      overflow:hidden;
+    }
+    #sidebar.expanded {width:200px; align-items:flex-start; padding-left:10px;}
+    
+    .sidebar-btn {
+      width:50px;
+      height:50px;
+      margin:10px 0;
+      border:none;
+      border-radius:10px;
+      background:#4e342e;
+      color:white;
+      cursor:pointer;
+      font-size:22px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      transition:all 0.3s;
+      overflow:hidden;
+    }
+    .sidebar-btn span.text {display:none; margin-left:10px; font-size:16px; white-space:nowrap;}
+    #sidebar.expanded .sidebar-btn span.text {display:inline;}
     .sidebar-btn:hover{background:#6d4c41;}
-    .sidebar-btn span.tooltip {visibility:hidden;width:120px;background:#3e2723;color:white;text-align:center;border-radius:6px;padding:5px 0;position:absolute;left:60px;top:50%;transform:translateY(-50%);font-size:12px;z-index:1;}
-    .sidebar-btn:hover span.tooltip {visibility:visible;}
-    #sidebarButtons {display:flex; flex-direction:column; width:100%; align-items:center; transition:all 0.3s;}
 
     #mainContent {flex:1;padding:20px;overflow-y:auto;}
 
@@ -30,7 +55,7 @@
     button.danger{background:#e53935;color:white;}
     button.success{background:#4caf50;color:white;}
     button.info{background:#0288d1;color:white;}
-
+    
     /* Menu Items */
     .menu-item {display:flex;align-items:center;justify-content:space-between;margin:10px 0;padding:10px;border-bottom:1px solid #eee;}
     .menu-item img {width:60px;height:50px;object-fit:cover;border-radius:6px;margin-right:10px;}
@@ -52,14 +77,12 @@
 <div id="dashboard">
   <!-- SIDEBAR -->
   <div id="sidebar">
-    <button class="sidebar-btn" onclick="toggleSidebar()">☰<span class="tooltip">Menu</span></button>
-    <div id="sidebarButtons">
-      <button class="sidebar-btn" onclick="showSection('ordersSection')">🛎<span class="tooltip">Orders</span></button>
-      <button class="sidebar-btn" onclick="showSection('menuListSection')">📋<span class="tooltip">Menu List</span></button>
-      <button class="sidebar-btn" onclick="showSection('addSection')">➕<span class="tooltip">Add Menu</span></button>
-      <button class="sidebar-btn" onclick="showSection('recordSection')">🧾<span class="tooltip">Records</span></button>
-      <button class="sidebar-btn" onclick="showSection('profileSection')">⚙️<span class="tooltip">Profile</span></button>
-    </div>
+    <button class="sidebar-btn" onclick="toggleSidebar()">☰<span class="text">Menu</span></button>
+    <button class="sidebar-btn" onclick="showSection('ordersSection')">🛎<span class="text">Orders</span></button>
+    <button class="sidebar-btn" onclick="showSection('menuListSection')">📋<span class="text">Menu List</span></button>
+    <button class="sidebar-btn" onclick="showSection('addSection')">➕<span class="text">Add Menu</span></button>
+    <button class="sidebar-btn" onclick="showSection('recordSection')">🧾<span class="text">Records</span></button>
+    <button class="sidebar-btn" onclick="showSection('profileSection')">⚙️<span class="text">Profile</span></button>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -132,7 +155,7 @@ function showDashboard(){
   loadMenu();
   loadOrders();
   loadDoneOrders();
-  showSection('ordersSection'); // default
+  showSection('ordersSection');
 }
 
 // ================= SIDEBAR =================
@@ -222,7 +245,6 @@ function logout(){localStorage.removeItem("token"); location.reload();}
 
 // ================= AUTO LOGIN =================
 if(token) showDashboard();
-
 </script>
 </body>
 </html>
