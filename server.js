@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Serve static files from PUBLIC folder
+// Serve static files from public folder
 app.use(express.static(path.join(__dirname, "public")));
 
 const SECRET = "supersecretkey";
@@ -41,7 +41,7 @@ db.serialize(() => {
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // CREATE DEFAULT ADMIN
+  // Default admin
   db.get("SELECT * FROM admin", [], async (err, row) => {
     if (!row) {
       const hash = await bcrypt.hash("1234", 10);
@@ -54,7 +54,7 @@ db.serialize(() => {
   });
 });
 
-/* ===== AUTH MIDDLEWARE ===== */
+/* ===== AUTH ===== */
 function auth(req, res, next) {
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ msg: "No token" });
@@ -67,14 +67,14 @@ function auth(req, res, next) {
   }
 }
 
-/* ===== HOMEPAGE (QR CODE TARGET) ===== */
+/* ===== CUSTOMER PAGE (QR CODE) ===== */
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "customerpage.html"));
 });
 
-/* ===== ADMIN PAGE (optional route) ===== */
+/* ===== ADMIN PAGE ===== */
 app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
+  res.sendFile(path.join(__dirname, "public", "adminpage.html"));
 });
 
 /* ===== LOGIN ===== */
