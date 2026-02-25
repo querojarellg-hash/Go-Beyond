@@ -1,123 +1,94 @@
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const cors = require("cors");
-const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(".")); // serve html files
 
-const SECRET = "supersecretkey";
+const PORT = 5000;
 
-/* ===== DATABASE ===== */
-const db = new sqlite3.Database("./database.db");
+// In-memory storage
+let orders = [];
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS admin(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT,
-    password TEXT
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS menu(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    price INTEGER,
-    img TEXT
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS orders(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer TEXT,
-    type TEXT,
-    items TEXT,
-    total INTEGER,
-    status TEXT DEFAULT 'new',
-    payment TEXT,
-    createdAt TEXT DEFAULT CURRENT_TIMESTAMP
-  )`);
-
-  // Default admin
-  db.get("SELECT * FROM admin", [], async (err, row) => {
-    if (!row) {
-      const hash = await bcrypt.hash("1234", 10);
-      db.run("INSERT INTO admin(username,password) VALUES(?,?)", ["admin", hash]);
-      console.log("Default Admin Created: admin / 1234");
-    }
+/* =========================
+   Get Philippine Time
+========================= */
+function getPhilippineTime() {
+  return new Date().toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
   });
-});
-
-/* ===== AUTH ===== */
-function auth(req, res, next) {
-  const token = req.headers.authorization;
-  if (!token) return res.status(401).json({ msg: "No token" });
-  try { jwt.verify(token, SECRET); next(); }
-  catch { res.status(400).json({ msg: "Invalid token" }); }
 }
 
-/* ===== CUSTOMER PAGE ===== */
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "customerpage.html"));
-});
-app.get("/menu", (req, res) => {
-  db.all("SELECT * FROM menu", [], (err, rows) => res.json(rows));
+/* =========================
+   Create Order
+========================= */
+app.post("/api/order", (req, res) => {
+  const { name, table, items, total } = req.body;
+
+  const newOrder = {
+    id: uuidv4(),
+    name,
+    table,
+    items,
+    total,
+    status: "Pending",
+    date: getPhilippineTime()
+  };
+
+  orders.push(newOrder);
+  res.json({ message: "Order received!", order: newOrder });
 });
 
-/* ===== ADMIN PAGE ===== */
-app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "adminpage.html"));
+/* =========================
+   Get All Orders
+========================= */
+app.get("/api/orders", (req, res) => {
+  res.json(orders);
 });
 
-/* ===== LOGIN ===== */
-app.post("/login", (req, res) => {
-  db.get("SELECT * FROM admin WHERE username=?", [req.body.username], async (err, row) => {
-    if (!row) return res.json({ msg: "User not found" });
-    const valid = await bcrypt.compare(req.body.password, row.password);
-    if (!valid) return res.json({ msg: "Wrong password" });
-    const token = jwt.sign({ id: row.id }, SECRET);
-    res.json({ token });
-  });
+/* =========================
+   Mark as Done
+========================= */
+app.put("/api/order/:id/done", (req, res) => {
+  const { id } = req.params;
+
+  const order = orders.find(o => o.id === id);
+  if (!order) return res.status(404).json({ message: "Order not found" });
+
+  order.status = "Done";
+  res.json({ message: "Order marked as done" });
 });
 
-/* ===== MENU MANAGEMENT ===== */
-app.post("/menu", auth, (req, res) => {
-  db.run("INSERT INTO menu(name,price,img) VALUES(?,?,?)", [req.body.name, req.body.price, req.body.img], () => res.json({ msg: "Added" }));
-});
-app.get("/menu", (req, res) => {
-  db.all("SELECT * FROM menu", [], (err, rows) => res.json(rows));
-});
-app.delete("/menu/:id", auth, (req, res) => {
-  db.run("DELETE FROM menu WHERE id=?", [req.params.id], () => res.json({ msg: "Deleted" }));
+/* =========================
+   Reject Order
+========================= */
+app.put("/api/order/:id/reject", (req, res) => {
+  const { id } = req.params;
+
+  const order = orders.find(o => o.id === id);
+  if (!order) return res.status(404).json({ message: "Order not found" });
+
+  order.status = "Rejected";
+  res.json({ message: "Order rejected" });
 });
 
-/* ===== ORDERS ===== */
-app.post("/order", (req, res) => {
-  const { customer, type, items, total, payment } = req.body;
-  db.run("INSERT INTO orders(customer,type,items,total,payment) VALUES(?,?,?,?,?)",
-    [customer, type, JSON.stringify(items), total, payment || "Cash"],
-    () => res.json({ msg: "Order saved" })
-  );
+/* =========================
+   Delete Order
+========================= */
+app.delete("/api/order/:id", (req, res) => {
+  const { id } = req.params;
+  orders = orders.filter(o => o.id !== id);
+  res.json({ message: "Order deleted" });
 });
 
-app.get("/orders", auth, (req, res) => {
-  db.all("SELECT * FROM orders WHERE status='new'", [], (err, rows) => {
-    rows.forEach(r => r.items = JSON.parse(r.items));
-    res.json(rows);
-  });
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
-
-app.post("/order/done/:id", auth, (req, res) => {
-  db.run("UPDATE orders SET status='done' WHERE id=?", [req.params.id], () => res.json({ msg: "Done" }));
-});
-
-app.get("/orders-done", auth, (req, res) => {
-  db.all("SELECT * FROM orders WHERE status='done' ORDER BY createdAt DESC", [], (err, rows) => {
-    rows.forEach(r => r.items = JSON.parse(r.items));
-    res.json(rows);
-  });
-});
-
-/* ===== START SERVER ===== */
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => { console.log("Server running on port " + PORT); });
