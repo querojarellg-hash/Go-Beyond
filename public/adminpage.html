@@ -158,7 +158,7 @@ function logout(){ localStorage.removeItem("token"); location.reload(); }
 
 /* QR */
 function generateQR(){
-  const qrData = "https://your-app.onrender.com/";
+  const qrData = "https://go-beyond.onrender.com/";
   document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(qrData);
 }
 function downloadQR(){
@@ -239,3 +239,4 @@ if(token) setTimeout(showDashboard,5000);
 </script>
 </body>
 </html>
+
