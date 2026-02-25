@@ -12,8 +12,11 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const SECRET = "supersecretkey";
 
-// ================= DATABASE =================
-const db = new sqlite3.Database("./database.db");
+/* ===== DATABASE ===== */
+const db = new sqlite3.Database("./database.db", (err) => {
+  if (err) console.error("DB connection error:", err);
+  else console.log("Connected to SQLite database");
+});
 
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS admin(
@@ -40,103 +43,91 @@ db.serialize(() => {
   )`);
 
   // Default admin
-  db.get("SELECT * FROM admin LIMIT 1", async (err,row)=>{
-    if(!row){
-      const hash = await bcrypt.hash("1234",10);
-      db.run("INSERT INTO admin(username,password) VALUES(?,?)",["admin",hash]);
+  db.get("SELECT * FROM admin LIMIT 1", [], async (err, row) => {
+    if (!row) {
+      const hash = await bcrypt.hash("1234", 10);
+      db.run("INSERT INTO admin(username,password) VALUES(?,?)", ["admin", hash]);
       console.log("Default Admin Created: admin / 1234");
     }
   });
-
-  // Default menu
-  db.get("SELECT COUNT(*) AS count FROM menu",[],(err,row)=>{
-    if(row.count===0){
-      db.run(`INSERT INTO menu(name,price,img) VALUES
-      ('Espresso',100,'https://via.placeholder.com/150'),
-      ('Latte',150,'https://via.placeholder.com/150'),
-      ('Cappuccino',130,'https://via.placeholder.com/150')`);
-      console.log("Default menu items added");
-    }
-  });
 });
 
-// ================= AUTH =================
-function auth(req,res,next){
+/* ===== AUTH MIDDLEWARE ===== */
+function auth(req, res, next) {
   const token = req.headers.authorization;
-  if(!token) return res.status(401).json({msg:"No token"});
-  try{
-    jwt.verify(token,SECRET);
+  if (!token) return res.status(401).json({ msg: "No token" });
+  try {
+    jwt.verify(token, SECRET);
     next();
-  }catch{
-    res.status(400).json({msg:"Invalid token"});
+  } catch {
+    res.status(400).json({ msg: "Invalid token" });
   }
 }
 
-// ================= ROUTES =================
-// Serve pages
-app.get("/", (req,res)=> res.sendFile(path.join(__dirname,"public","customer.html")));
-app.get("/admin", (req,res)=> res.sendFile(path.join(__dirname,"public","admin.html")));
+/* ===== ROUTES ===== */
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "customerpage.html")));
+app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public", "adminpage.html")));
 
-// ----- LOGIN -----
-app.post("/login",(req,res)=>{
-  db.get("SELECT * FROM admin WHERE username=?",[req.body.username],async(err,row)=>{
-    if(!row) return res.json({msg:"User not found"});
-    const valid = await bcrypt.compare(req.body.password,row.password);
-    if(!valid) return res.json({msg:"Wrong password"});
-    const token = jwt.sign({id:row.id},SECRET);
-    res.json({token});
+/* LOGIN */
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  db.get("SELECT * FROM admin WHERE username=?", [username], async (err, row) => {
+    if (!row) return res.json({ msg: "User not found" });
+    const valid = await bcrypt.compare(password, row.password);
+    if (!valid) return res.json({ msg: "Wrong password" });
+    const token = jwt.sign({ id: row.id }, SECRET);
+    res.json({ token });
   });
 });
 
-// ----- CHANGE PASSWORD -----
-app.post("/change-password",auth,(req,res)=>{
-  const newPass=req.body.password;
-  bcrypt.hash(newPass,10,(err,hash)=>{
-    db.run("UPDATE admin SET password=? WHERE id=1",[hash],()=>res.json({msg:"Password changed"}));
-  });
+/* CHANGE PASSWORD */
+app.post("/change-password", auth, async (req, res) => {
+  const { password } = req.body;
+  const hash = await bcrypt.hash(password, 10);
+  db.run("UPDATE admin SET password=? WHERE id=1", [hash], () => res.json({ msg: "Password changed" }));
 });
 
-// ----- MENU -----
-app.get("/menu",(req,res)=>{
-  db.all("SELECT * FROM menu",[],(err,rows)=> res.json(rows));
+/* MENU */
+app.get("/menu", (req, res) => {
+  db.all("SELECT * FROM menu", [], (err, rows) => res.json(rows));
 });
 
-app.post("/menu",auth,(req,res)=>{
-  const {name,price,img}=req.body;
-  db.run("INSERT INTO menu(name,price,img) VALUES(?,?,?)",[name,price,img],()=>res.json({msg:"Menu added"}));
+app.post("/menu", auth, (req, res) => {
+  const { name, price, img } = req.body;
+  db.run("INSERT INTO menu(name,price,img) VALUES(?,?,?)", [name, price, img], () => res.json({ msg: "Added" }));
 });
 
-app.delete("/menu/:id",auth,(req,res)=>{
-  db.run("DELETE FROM menu WHERE id=?",[req.params.id],()=>res.json({msg:"Menu deleted"}));
+app.delete("/menu/:id", auth, (req, res) => {
+  db.run("DELETE FROM menu WHERE id=?", [req.params.id], () => res.json({ msg: "Deleted" }));
 });
 
-// ----- ORDERS -----
-app.post("/order",(req,res)=>{
-  const {customer,type,items,total}=req.body;
+/* ORDERS */
+app.post("/order", (req, res) => {
+  const { customer, type, items, total } = req.body;
   db.run("INSERT INTO orders(customer,type,items,total) VALUES(?,?,?,?)",
-    [customer,type,JSON.stringify(items),total],
-    ()=>res.json({msg:"Order saved"})
+    [customer, type, JSON.stringify(items), total],
+    () => res.json({ msg: "Order saved" })
   );
 });
 
-app.get("/orders",auth,(req,res)=>{
-  db.all("SELECT * FROM orders WHERE status='new'",[],(err,rows)=>{
-    rows.forEach(r=>r.items=JSON.parse(r.items));
+app.get("/orders", auth, (req, res) => {
+  db.all("SELECT * FROM orders WHERE status='new'", [], (err, rows) => {
+    rows.forEach(r => r.items = JSON.parse(r.items));
     res.json(rows);
   });
 });
 
-app.post("/order/done/:id",auth,(req,res)=>{
-  db.run("UPDATE orders SET status='done' WHERE id=?",[req.params.id],()=>res.json({msg:"Order done"}));
+app.post("/order/done/:id", auth, (req, res) => {
+  db.run("UPDATE orders SET status='done' WHERE id=?", [req.params.id], () => res.json({ msg: "Done" }));
 });
 
-app.get("/orders-done",auth,(req,res)=>{
-  db.all("SELECT * FROM orders WHERE status='done' ORDER BY createdAt DESC",[],(err,rows)=>{
-    rows.forEach(r=>r.items=JSON.parse(r.items));
+app.get("/orders-done", auth, (req, res) => {
+  db.all("SELECT * FROM orders WHERE status='done' ORDER BY createdAt DESC", [], (err, rows) => {
+    rows.forEach(r => r.items = JSON.parse(r.items));
     res.json(rows);
   });
 });
 
-// ================= START SERVER =================
-const PORT=process.env.PORT || 3000;
-app.listen(PORT,()=>console.log("Server running on port "+PORT));
+/* ===== START SERVER ===== */
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server running on port " + PORT));
