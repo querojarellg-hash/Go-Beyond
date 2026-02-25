@@ -6,27 +6,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 body {margin:0;font-family:Poppins,sans-serif;background:#f4f6f9;}
-/* LOGIN */
-#loginForm {width:320px;margin:150px auto;background:white;padding:35px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.1);text-align:center;}
-#loginForm input {width:100%;padding:10px;margin:10px 0;border-radius:6px;border:1px solid #ccc;}
-#loginForm button {width:100%;padding:10px;border:none;border-radius:6px;background:#3e2723;color:white;cursor:pointer;}
-/* DASHBOARD */
 #dashboard {display:flex;height:100vh;display:none;}
 #sidebar {width:70px;background:#3e2723;display:flex;flex-direction:column;align-items:center;padding-top:20px;}
 .sidebar-btn {width:50px;height:50px;margin:10px 0;border:none;border-radius:10px;background:#4e342e;color:white;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;position:relative;}
 .sidebar-btn:hover{background:#6d4c41;}
 .sidebar-btn span.tooltip {visibility:hidden;width:120px;background:#3e2723;color:white;text-align:center;border-radius:6px;padding:5px 0;position:absolute;left:60px;top:50%;transform:translateY(-50%);font-size:12px;z-index:1;}
 .sidebar-btn:hover span.tooltip {visibility:visible;}
-#sidebarButtons {display:flex;flex-direction:column;align-items:center;}
+#sidebarButtons {display:none;flex-direction:column;align-items:center;}
 #mainContent {flex:1;padding:20px;overflow-y:auto;}
-.card {background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,.08);display:none;}
-input,select {padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ddd;width:100%;}
-button.primary{background:#3e2723;color:white;}
-button.danger{background:#e53935;color:white;}
-button.success{background:#4caf50;color:white;}
+.card {background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,.08);}
+button.primary{background:#3e2723;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
+button.danger{background:#e53935;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
+button.success{background:#4caf50;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
 .menu-item {display:flex;align-items:center;justify-content:space-between;margin:10px 0;padding:10px;border-bottom:1px solid #eee;}
 .menu-item img {width:60px;height:50px;object-fit:cover;border-radius:6px;margin-right:10px;}
 .flex{display:flex;align-items:center;}
+#ordersSection,#menuListSection{display:block;}
 </style>
 </head>
 <body>
@@ -43,7 +38,7 @@ button.success{background:#4caf50;color:white;}
 <div id="dashboard">
   <!-- SIDEBAR -->
   <div id="sidebar">
-    <button class="sidebar-btn" onclick="toggleCleanView()">☰<span class="tooltip">Menu</span></button>
+    <button class="sidebar-btn" onclick="toggleSidebarMenu()">☰<span class="tooltip">Menu</span></button>
     <div id="sidebarButtons">
       <button class="sidebar-btn" onclick="showSection('qrSection')">📱<span class="tooltip">QR Code</span></button>
       <button class="sidebar-btn" onclick="showSection('addSection')">➕<span class="tooltip">Add Menu</span></button>
@@ -55,14 +50,14 @@ button.success{background:#4caf50;color:white;}
   <!-- MAIN CONTENT -->
   <div id="mainContent">
     <!-- QR -->
-    <div id="qrSection" class="card">
+    <div id="qrSection" class="card" style="display:none">
       <h3>📱 QR Code</h3>
       <img id="qrImage" width="200"><br><br>
       <button class="primary" onclick="downloadQR()">Save QR Code</button>
     </div>
 
     <!-- ADD MENU -->
-    <div id="addSection" class="card">
+    <div id="addSection" class="card" style="display:none">
       <h3>➕ Add Menu Item</h3>
       <input id="name" placeholder="Item Name">
       <input id="price" type="number" placeholder="Price">
@@ -73,7 +68,7 @@ button.success{background:#4caf50;color:white;}
     </div>
 
     <!-- RECORDS -->
-    <div id="recordSection" class="card">
+    <div id="recordSection" class="card" style="display:none">
       <h3>✅ Records of Orders</h3>
       <select onchange="filterRecords(this.value)">
         <option value="all">All</option>
@@ -85,7 +80,7 @@ button.success{background:#4caf50;color:white;}
     </div>
 
     <!-- PROFILE -->
-    <div id="profileSection" class="card">
+    <div id="profileSection" class="card" style="display:none">
       <h3>Profile Settings</h3>
       <input id="newPass" type="password" placeholder="New Password">
       <button class="primary" onclick="changePassword()">Change Password</button><br><br>
@@ -109,21 +104,18 @@ button.success{background:#4caf50;color:white;}
 <script>
 let token = localStorage.getItem("token");
 let doneData = [];
-let cleanView = false;
+let sidebarVisible = false;
 
 /* LOGIN */
 function login(){
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-  fetch("/login",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({username,password})
-  }).then(r=>r.json()).then(data=>{
+  const username=document.getElementById("username").value;
+  const password=document.getElementById("password").value;
+  fetch("/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})})
+  .then(r=>r.json()).then(data=>{
     if(data.token){
       token=data.token;
       localStorage.setItem("token",token);
-      setTimeout(showDashboard, 5000); // 5-sec loading
+      setTimeout(showDashboard,5000);
     } else alert("Login failed");
   });
 }
@@ -136,41 +128,27 @@ function showDashboard(){
   loadMenu();
   loadDoneOrders();
   loadOrders();
-  showSection('qrSection');
-}
-
-/* TOGGLE CLEAN VIEW */
-function toggleCleanView(){
-  cleanView = !cleanView;
-  const sidebarBtns = document.getElementById("sidebarButtons");
-  if(cleanView){
-    sidebarBtns.style.display = "none";
-    showSectionMinimal();
-  } else {
-    sidebarBtns.style.display = "flex";
-    showSection('qrSection');
-  }
-}
-
-function showSectionMinimal(){
   hideAllSections();
-  document.getElementById("ordersSection").style.display = "block";
-  document.getElementById("menuListSection").style.display = "block";
+}
+
+/* TOGGLE SIDEBAR MENU */
+function toggleSidebarMenu(){
+  sidebarVisible = !sidebarVisible;
+  document.getElementById("sidebarButtons").style.display = sidebarVisible ? "flex":"none";
 }
 
 /* SHOW SECTION */
 function showSection(id){
   hideAllSections();
-  document.getElementById(id).style.display = "block";
+  document.getElementById(id).style.display="block";
 }
 function hideAllSections(){
-  ['qrSection','addSection','recordSection','profileSection','ordersSection','menuListSection']
-  .forEach(s => document.getElementById(s).style.display = 'none');
+  ['qrSection','addSection','recordSection','profileSection'].forEach(s=>document.getElementById(s).style.display="none");
 }
 
 /* PROFILE */
 function changePassword(){
-  const newPass = document.getElementById("newPass").value;
+  const newPass=document.getElementById("newPass").value;
   fetch("/change-password",{method:"POST",
     headers:{"Content-Type":"application/json","Authorization":token},
     body:JSON.stringify({password:newPass})
@@ -181,28 +159,24 @@ function logout(){ localStorage.removeItem("token"); location.reload(); }
 /* QR */
 function generateQR(){
   const qrData = "https://your-app.onrender.com/";
-  document.getElementById("qrImage").src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(qrData);
+  document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(qrData);
 }
 function downloadQR(){
   const link = document.createElement("a");
-  link.href = document.getElementById("qrImage").src;
-  link.download = "GoBeyondCafe-QR.png";
+  link.href=document.getElementById("qrImage").src;
+  link.download="GoBeyondCafe-QR.png";
   link.click();
 }
 
 /* MENU */
 async function addMenu(){
-  let img = "";
-  if(document.getElementById("imgFile").files[0]) img = await toBase64(document.getElementById("imgFile").files[0]);
+  let img="";
+  if(document.getElementById("imgFile").files[0]) img=await toBase64(document.getElementById("imgFile").files[0]);
   else if(document.getElementById("imgUrl").value) img=document.getElementById("imgUrl").value;
   else {alert("Add image"); return;}
   fetch("/menu",{method:"POST",
     headers:{"Content-Type":"application/json","Authorization":token},
-    body:JSON.stringify({
-      name:document.getElementById("name").value,
-      price:document.getElementById("price").value,
-      img
-    })
+    body:JSON.stringify({name:document.getElementById("name").value,price:document.getElementById("price").value,img})
   }).then(loadMenu);
 }
 function toBase64(file){return new Promise(res=>{let reader=new FileReader();reader.readAsDataURL(file);reader.onload=()=>res(reader.result);});}
@@ -210,11 +184,8 @@ function loadMenu(){
   fetch("/menu").then(r=>r.json()).then(data=>{
     const divMain=document.getElementById("menuListMain");
     divMain.innerHTML="";
-    const divAdd=document.getElementById("menuList");
-    divAdd.innerHTML="";
     data.forEach(item=>{
       divMain.innerHTML+=`<div class="menu-item"><div class="flex"><img src="${item.img}"><span>${item.name} - ₱${item.price}</span></div></div>`;
-      divAdd.innerHTML+=`<div class="menu-item"><div class="flex"><img src="${item.img}"><span>${item.name} - ₱${item.price}</span></div></div>`;
     });
   });
 }
@@ -240,7 +211,6 @@ function displayFiltered(type){
 }
 function filterRecords(value){displayFiltered(value);}
 
-/* NEW ORDERS */
 function loadOrders(){
   fetch("/orders",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{
     const div=document.getElementById("orders");
@@ -248,13 +218,24 @@ function loadOrders(){
     data.forEach(order=>{
       let items="";
       order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`);
-      div.innerHTML+=`<div class="card"><strong>${order.customer}</strong><br>${items}Total: ₱${order.total}</div>`;
+      div.innerHTML+=`<div class="card"><strong>${order.customer}</strong><br>${items}Total: ₱${order.total}<br>
+      <button class="success" onclick="markDone(${order.id})">Mark Done</button>
+      <button class="danger" onclick="rejectOrder(${order.id})">Reject</button></div>`;
     });
   });
 }
 
+/* ACCEPT / REJECT ORDERS */
+function markDone(id){
+  fetch(`/order/done/${id}`,{method:"POST",headers:{Authorization:token}}).then(()=>loadOrders());
+}
+function rejectOrder(id){
+  fetch(`/order/done/${id}`,{method:"POST",headers:{Authorization:token}}).then(()=>loadOrders());
+}
+
 /* AUTO LOGIN */
 if(token) setTimeout(showDashboard,5000);
+
 </script>
 </body>
 </html>
