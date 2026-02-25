@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <title>Go Beyond Cafe</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
@@ -13,7 +14,7 @@ header{background:#3e2723;color:white;padding:25px;text-align:center;}
 #orderScreen{padding:15px;}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;}
 .card{background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 5px 15px rgba(0,0,0,.08);}
-.card img{width:100%;height:120px;object-fit:cover;border-radius:8px;}
+.card img{width:100%;height:120px;object-fit:cover;border-radius:8px;display:block;}
 .card button{background:#3e2723;color:white;border:none;padding:6px 12px;border-radius:6px;margin-top:8px;cursor:pointer;}
 .cart{background:white;margin-top:20px;padding:15px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,.08);}
 .cart h3{margin-top:0;}
@@ -36,129 +37,114 @@ li{padding:5px 0;border-bottom:1px solid #eee;}
 <div id="welcome">
 <h2>Welcome to Go Beyond Cafe!</h2>
 <p>Tap below to start your order.</p>
-<button onclick="start()">Start Order</button>
+<button onclick="startOrder()">Start Order</button>
 </div>
 
 <!-- ORDER SCREEN -->
 <div id="orderScreen" class="hidden">
-
 <div class="grid" id="menu"></div>
 
 <div class="cart">
 <h3>Your Order</h3>
-
 <input id="customerName" placeholder="Enter Your Name">
-
 <div>
 <button id="dineBtn" class="type-btn" onclick="setType('Dine In')">Dine In</button>
 <button id="takeBtn" class="type-btn" onclick="setType('Take Out')">Take Out</button>
 </div>
-
 <ul id="cartList"></ul>
-
 <div class="total">Total: ₱<span id="total">0</span></div>
-
 <button onclick="checkout()">Send Order</button>
 </div>
-
 </div>
 
 <script>
 let menu=[],cart=[],total=0,type="";
 
 /* START ORDER */
-function start(){
- document.getElementById("welcome").classList.add("hidden");
- document.getElementById("orderScreen").classList.remove("hidden");
- loadMenu();
+function startOrder(){
+  document.getElementById("welcome").classList.add("hidden");
+  document.getElementById("orderScreen").classList.remove("hidden");
+  loadMenu();
 }
 
-/* LOAD MENU */
+/* LOAD MENU FAST */
 function loadMenu(){
- fetch("/menu").then(r=>r.json()).then(data=>{
-  menu=data;
-  const div=document.getElementById("menu");
-  div.innerHTML="";
-  data.forEach((m,i)=>{
-   div.innerHTML+=`
-   <div class="card">
-    <img src="${m.img}">
-    <h4>${m.name}</h4>
-    <p>₱${m.price}</p>
-    <button onclick="add(${i})">Add</button>
-   </div>`;
+  fetch("https://YOUR-RENDER-APP.onrender.com/menu")
+  .then(r=>r.json())
+  .then(data=>{
+    menu=data;
+    const div=document.getElementById("menu");
+    div.innerHTML="";
+    menu.forEach((m,i)=>{
+      const card=document.createElement("div");
+      card.className="card";
+      card.innerHTML=`
+        <img loading="lazy" src="${m.img}" alt="${m.name}">
+        <h4>${m.name}</h4>
+        <p>₱${m.price}</p>
+        <button onclick="add(${i})">Add</button>
+      `;
+      div.appendChild(card);
+    });
   });
- });
 }
 
 /* ADD TO CART */
 function add(i){
- let item=menu[i];
- let exist=cart.find(x=>x.id===item.id);
- if(exist) exist.qty++;
- else cart.push({...item,qty:1});
- render();
+  let item=menu[i];
+  let exist=cart.find(x=>x.id===item.id);
+  if(exist) exist.qty++;
+  else cart.push({...item,qty:1});
+  renderCart();
 }
 
 /* RENDER CART */
-function render(){
- total=0;
- const list=document.getElementById("cartList");
- list.innerHTML="";
- cart.forEach((c,i)=>{
-  total+=c.price*c.qty;
-  list.innerHTML+=`
-  <li>${c.name} x${c.qty}
-  <button onclick="removeItem(${i})" style="background:#e53935;color:white;border:none;border-radius:4px;padding:2px 6px;">X</button>
-  </li>`;
- });
- document.getElementById("total").innerText=total;
+function renderCart(){
+  total=0;
+  const list=document.getElementById("cartList");
+  list.innerHTML="";
+  cart.forEach((c,i)=>{
+    total+=c.price*c.qty;
+    const li=document.createElement("li");
+    li.innerHTML=`${c.name} x${c.qty} <button onclick="removeItem(${i})" style="background:#e53935;color:white;border:none;border-radius:4px;padding:2px 6px;">X</button>`;
+    list.appendChild(li);
+  });
+  document.getElementById("total").innerText=total;
 }
 
 /* REMOVE ITEM */
 function removeItem(i){
- cart.splice(i,1);
- render();
+  cart.splice(i,1);
+  renderCart();
 }
 
 /* SET ORDER TYPE */
 function setType(t){
- type=t;
- document.getElementById("dineBtn").classList.remove("active");
- document.getElementById("takeBtn").classList.remove("active");
- if(t==="Dine In") document.getElementById("dineBtn").classList.add("active");
- if(t==="Take Out") document.getElementById("takeBtn").classList.add("active");
-}
-
-/* CHECKOUT */
-function checkout(){
- const name=document.getElementById("customerName").value;
- if(!name||cart.length===0||!type){
-  alert("Please complete your name, order and type.");
-  return;
- }
-
- fetch("/order",{
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({
-   customer:name,
-   type,
-   items:cart,
-   total,
-   payment:"Cash"
-  })
- }).then(()=>{
-  alert("Order sent successfully!");
-  cart=[];
-  render();
-  document.getElementById("customerName").value="";
-  type="";
+  type=t;
   document.getElementById("dineBtn").classList.remove("active");
   document.getElementById("takeBtn").classList.remove("active");
- });
+  if(t==="Dine In") document.getElementById("dineBtn").classList.add("active");
+  if(t==="Take Out") document.getElementById("takeBtn").classList.add("active");
+}
+
+/* CHECKOUT FAST */
+function checkout(){
+  const name=document.getElementById("customerName").value.trim();
+  if(!name||cart.length===0||!type){alert("Complete your name, order and type."); return;}
+
+  fetch("https://YOUR-RENDER-APP.onrender.com/order",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({customer:name,type,items:cart,total,payment:"Cash"})
+  }).then(()=>{
+    alert("Order sent successfully!");
+    cart=[]; renderCart();
+    document.getElementById("customerName").value="";
+    type="";
+    document.getElementById("dineBtn").classList.remove("active");
+    document.getElementById("takeBtn").classList.remove("active");
+  });
 }
 </script>
-
 </body>
 </html>
