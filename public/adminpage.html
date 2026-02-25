@@ -6,42 +6,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 body {margin:0;font-family:Poppins,sans-serif;background:#f4f6f9;}
-/* LOGIN */
 #loginForm {width:320px;margin:150px auto;background:white;padding:35px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.1);text-align:center;}
 #loginForm input {width:100%;padding:10px;margin:10px 0;border-radius:6px;border:1px solid #ccc;}
 #loginForm button {width:100%;padding:10px;border:none;border-radius:6px;background:#3e2723;color:white;cursor:pointer;}
-
-/* DASHBOARD */
 #dashboard {display:flex;height:100vh;display:none;}
-
-/* SIDEBAR */
-#sidebar {
-  width:70px;
-  background:#3e2723;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding-top:20px;
-  transition:width 0.3s;
-}
-#sidebar.expanded { width:70px; } /* stays same, just toggle effect */
-#sidebar button.sidebar-btn {
-  width:50px;
-  height:50px;
-  margin:10px 0;
-  border:none;
-  border-radius:10px;
-  background:#4e342e;
-  color:white;
-  cursor:pointer;
-  font-size:22px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:all 0.3s;
-}
+#sidebar {width:70px;background:#3e2723;display:flex;flex-direction:column;align-items:center;padding-top:20px;transition:width 0.3s;}
+#sidebar button.sidebar-btn {width:50px;height:50px;margin:10px 0;border:none;border-radius:10px;background:#4e342e;color:white;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:all 0.3s;}
 #sidebar button.sidebar-btn:hover { background:#6d4c41; }
-
 #mainContent {flex:1;padding:20px;overflow-y:auto;}
 .card {background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,.08);display:none;}
 input,select {padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ddd;width:100%;}
@@ -51,24 +22,13 @@ button.success{background:#4caf50;color:white;}
 .menu-item {display:flex;align-items:center;justify-content:space-between;margin:10px 0;padding:10px;border-bottom:1px solid #eee;}
 .menu-item img {width:60px;height:50px;object-fit:cover;border-radius:6px;margin-right:10px;}
 .flex{display:flex;align-items:center;}
-
-/* ORDER BUTTONS */
-.order-actions button {
-  margin-right:5px;
-  padding:5px 10px;
-  border:none;
-  border-radius:5px;
-  cursor:pointer;
-  color:white;
-}
+.order-actions button {margin-right:5px;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;color:white;}
 .order-actions .accept{background:#4caf50;}
 .order-actions .reject{background:#e53935;}
 .order-actions .done{background:#3e2723;}
 </style>
 </head>
 <body>
-
-<!-- LOGIN -->
 <div id="loginForm">
 <h2>Go Beyond Cafe Admin</h2>
 <input id="username" placeholder="Username">
@@ -76,9 +36,7 @@ button.success{background:#4caf50;color:white;}
 <button class="primary" onclick="login()">Login</button>
 </div>
 
-<!-- DASHBOARD -->
 <div id="dashboard">
-  <!-- SIDEBAR -->
   <div id="sidebar">
     <button class="sidebar-btn" onclick="toggleSidebar()">☰</button>
     <button class="sidebar-btn" onclick="showSection('ordersSection')">🛎</button>
@@ -88,16 +46,13 @@ button.success{background:#4caf50;color:white;}
     <button class="sidebar-btn" onclick="showSection('profileSection')">⚙️</button>
   </div>
 
-  <!-- MAIN CONTENT -->
   <div id="mainContent">
-    <!-- QR -->
     <div id="qrSection" class="card">
       <h3>📱 QR Code</h3>
       <img id="qrImage" width="200"><br><br>
       <button class="primary" onclick="downloadQR()">Save QR Code</button>
     </div>
 
-    <!-- ADD MENU -->
     <div id="addSection" class="card">
       <h3>➕ Add Menu Item</h3>
       <input id="name" placeholder="Item Name">
@@ -108,13 +63,11 @@ button.success{background:#4caf50;color:white;}
       <div id="menuList"></div>
     </div>
 
-    <!-- MENU LIST -->
     <div id="menuListSection" class="card">
       <h3>📋 Menu List</h3>
       <div id="menuListMain"></div>
     </div>
 
-    <!-- RECORDS -->
     <div id="recordSection" class="card">
       <h3>✅ Records of Orders</h3>
       <select onchange="filterRecords(this.value)">
@@ -126,7 +79,6 @@ button.success{background:#4caf50;color:white;}
       <div id="doneOrders"></div>
     </div>
 
-    <!-- PROFILE -->
     <div id="profileSection" class="card">
       <h3>Profile Settings</h3>
       <input id="newPass" type="password" placeholder="New Password">
@@ -134,12 +86,10 @@ button.success{background:#4caf50;color:white;}
       <button class="danger" onclick="logout()">Logout</button>
     </div>
 
-    <!-- NEW ORDERS -->
     <div id="ordersSection" class="card">
       <h3>🧾 New Orders</h3>
       <div id="orders"></div>
     </div>
-
   </div>
 </div>
 
@@ -147,19 +97,14 @@ button.success{background:#4caf50;color:white;}
 let token=localStorage.getItem("token");
 let doneData=[];
 
-// LOGIN
 function login(){
   const username=document.getElementById("username").value;
   const password=document.getElementById("password").value;
   fetch("/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})})
   .then(r=>r.json())
-  .then(data=>{
-    if(data.token){token=data.token;localStorage.setItem("token",token);showDashboard();}
-    else alert("Login failed");
-  });
+  .then(data=>{ if(data.token){ token=data.token; localStorage.setItem("token",token); showDashboard(); } else alert("Login failed"); });
 }
 
-// DASHBOARD
 function showDashboard(){
   document.getElementById("loginForm").style.display="none";
   document.getElementById("dashboard").style.display="flex";
@@ -170,21 +115,10 @@ function showDashboard(){
   showSection('qrSection');
 }
 
-// SIDEBAR TOGGLE
-function toggleSidebar(){
-  document.getElementById("sidebar").classList.toggle("expanded");
-}
+function toggleSidebar(){document.getElementById("sidebar").classList.toggle("expanded");}
+function showSection(id){hideAllSections();document.getElementById(id).style.display="block";}
+function hideAllSections(){['qrSection','addSection','recordSection','profileSection','ordersSection','menuListSection'].forEach(s=>document.getElementById(s).style.display='none');}
 
-// SHOW SECTION
-function showSection(id){
-  hideAllSections();
-  document.getElementById(id).style.display="block";
-}
-function hideAllSections(){
-  ['qrSection','addSection','recordSection','profileSection','ordersSection','menuListSection'].forEach(s=>document.getElementById(s).style.display='none');
-}
-
-// PROFILE
 function changePassword(){
   const newPass=document.getElementById("newPass").value;
   fetch("/change-password",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({password:newPass})})
@@ -192,11 +126,9 @@ function changePassword(){
 }
 function logout(){localStorage.removeItem("token");location.reload();}
 
-// QR
-function generateQR(){document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent("https://go-beyond.onrender.com/customerpage.html");}
+function generateQR(){document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent("http://localhost:3000/");}
 function downloadQR(){const link=document.createElement("a");link.href=document.getElementById("qrImage").src;link.download="GoBeyondCafe-QR.png";link.click();}
 
-// MENU
 async function addMenu(){
   let img="";
   if(document.getElementById("imgFile").files[0]) img=await toBase64(document.getElementById("imgFile").files[0]);
@@ -220,31 +152,24 @@ function loadMenu(){
   });
 }
 
-// ORDERS
 function loadOrders(){
   fetch("/orders",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{
     const div=document.getElementById("orders"); div.innerHTML="";
     data.forEach(order=>{
       let items=""; order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`);
-      div.innerHTML+=`
-        <div class="card">
-          <strong>${order.customer}</strong><br>${items}Total: ₱${order.total}<br>
-          <div class="order-actions">
-            <button class="accept" onclick="updateOrder(${order.id},'accept')">Accept</button>
-            <button class="reject" onclick="updateOrder(${order.id},'reject')">Reject</button>
-            <button class="done" onclick="updateOrder(${order.id},'done')">Done</button>
-          </div>
-        </div>`;
+      div.innerHTML+=`<div class="card"><strong>${order.customer}</strong><br>${items}Total: ₱${order.total}<br>
+      <div class="order-actions">
+        <button class="accept" onclick="updateOrder(${order.id},'accept')">Accept</button>
+        <button class="reject" onclick="updateOrder(${order.id},'reject')">Reject</button>
+        <button class="done" onclick="updateOrder(${order.id},'done')">Done</button>
+      </div></div>`;
     });
   });
 }
 function updateOrder(id,type){
-  let url="/order/done/"+id;
-  if(type==='reject') url="/order/done/"+id; // handle reject same as done or adjust backend
-  fetch(url,{method:"POST",headers:{Authorization:token}}).then(loadOrders).then(loadDoneOrders);
+  fetch("/order/done/"+id,{method:"POST",headers:{Authorization:token}}).then(loadOrders).then(loadDoneOrders);
 }
 
-// DONE ORDERS / RECORDS
 function loadDoneOrders(){
   fetch("/orders-done",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{doneData=data;displayFiltered("all");});
 }
@@ -262,9 +187,7 @@ function displayFiltered(type){
 }
 function filterRecords(value){displayFiltered(value);}
 
-// AUTO LOGIN
 if(token) showDashboard();
 </script>
-
 </body>
 </html>
