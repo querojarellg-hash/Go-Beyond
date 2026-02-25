@@ -4,6 +4,7 @@
 <title>Admin Dashboard - Go Beyond Cafe</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
 <style>
 body{margin:0;font-family:Poppins,sans-serif;background:#f4f6f9;}
 header{background:#3e2723;color:white;padding:20px;display:flex;justify-content:space-between;align-items:center;}
@@ -42,34 +43,44 @@ input{padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;width:10
 
 <div class="container" id="dashboard">
 
+<!-- QR SECTION -->
 <div class="card">
-  <h3>📱 QR Code - Ready to Scan</h3>
-  <p>Scan to open menu:</p>
-  <img id="qrImage" width="180">
-  <input id="qrIp" placeholder="Enter Server IPv4">
-  <button onclick="updateQR()">Update QR</button>
+  <h3>📱 Scan to Order</h3>
+  <p>Customers scan this QR to open menu.</p>
+  <img id="qrImage" width="200"><br><br>
+  <button class="add-btn" onclick="downloadQR()">Save QR Code</button>
 </div>
 
 <div class="notification" id="notification"></div>
 
+<!-- NEW ORDERS -->
 <div class="card">
 <h3>🧾 New Orders</h3>
 <div id="orders"></div>
 </div>
 
+<!-- MENU LIST -->
 <div class="card">
 <h3>📋 Menu List</h3>
 <div id="menuList"></div>
 </div>
 
+<!-- ADD MENU -->
 <div class="card">
 <h3>➕ Add Menu Item</h3>
 <input id="name" placeholder="Item Name">
 <input id="price" type="number" placeholder="Price">
+
+<label>Upload Image</label>
 <input type="file" id="imgFile" accept="image/*">
+
+<label>OR Paste Image URL</label>
+<input id="imgUrl" placeholder="https://example.com/image.jpg">
+
 <button class="add-btn" onclick="addMenu()">Add Item</button>
 </div>
 
+<!-- DONE ORDERS -->
 <div class="card">
 <h3>✅ Records of Orders Done</h3>
 <div id="doneOrders"></div>
@@ -113,10 +124,15 @@ function getBase64(file){
 
 function loadMenu(){
   fetch("/menu").then(r=>r.json()).then(data=>{
-    const div=document.getElementById("menuList"); div.innerHTML="";
+    const div=document.getElementById("menuList"); 
+    div.innerHTML="";
     data.forEach(item=>{
-      div.innerHTML+=`<div class="menu-item">
-        <div class="flex"><img src="${item.img}"><span>${item.name} - ₱${item.price}</span></div>
+      div.innerHTML+=`
+      <div class="menu-item">
+        <div class="flex">
+          <img src="${item.img}">
+          <span>${item.name} - ₱${item.price}</span>
+        </div>
         <button class="delete-btn" onclick="deleteMenu(${item.id})">Delete</button>
       </div>`;
     });
@@ -127,10 +143,36 @@ async function addMenu(){
   const name=document.getElementById("name").value;
   const price=document.getElementById("price").value;
   const file=document.getElementById("imgFile").files[0];
-  if(!name||!price||!file){ alert("Complete all fields"); return; }
-  const img = await getBase64(file);
-  fetch("/menu",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({name,price,img})})
-  .then(()=>{ loadMenu(); });
+  const imgUrl=document.getElementById("imgUrl").value;
+
+  if(!name||!price){
+    alert("Enter name and price");
+    return;
+  }
+
+  let img="";
+
+  if(file){
+    img=await getBase64(file);
+  }else if(imgUrl){
+    img=imgUrl;
+  }else{
+    alert("Upload image or paste URL");
+    return;
+  }
+
+  fetch("/menu",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":token},
+    body:JSON.stringify({name,price,img})
+  })
+  .then(()=>{
+    loadMenu();
+    document.getElementById("name").value="";
+    document.getElementById("price").value="";
+    document.getElementById("imgFile").value="";
+    document.getElementById("imgUrl").value="";
+  });
 }
 
 function deleteMenu(id){
@@ -143,14 +185,18 @@ function loadOrders(){
   fetch("/orders",{headers:{Authorization:token}})
   .then(r=>r.json())
   .then(data=>{
-    const div=document.getElementById("orders"); div.innerHTML="";
+    const div=document.getElementById("orders"); 
+    div.innerHTML="";
     if(data.length>lastOrderCount) alert("New Order Received!");
-    lastOrderCount = data.length;
+    lastOrderCount=data.length;
+
     data.forEach(order=>{
       let items="";
       order.items.forEach(i=>{ items+=`${i.name} x${i.qty}<br>`; });
-      div.innerHTML+=`<div class="card">
-        <strong>${order.customer}</strong> (${order.type})<br>${items}
+      div.innerHTML+=`
+      <div class="card">
+        <strong>${order.customer}</strong> (${order.type})<br>
+        ${items}
         Total: ₱${order.total}<br>
         <button class="done-btn" onclick="markDone(${order.id})">Mark Done</button>
       </div>`;
@@ -167,29 +213,33 @@ function loadDoneOrders(){
   fetch("/orders-done",{headers:{Authorization:token}})
   .then(r=>r.json())
   .then(data=>{
-    const div=document.getElementById("doneOrders"); div.innerHTML="";
+    const div=document.getElementById("doneOrders"); 
+    div.innerHTML="";
     data.forEach(order=>{
       let items="";
       order.items.forEach(i=>{ items+=`${i.name} x${i.qty}<br>`; });
-      div.innerHTML+=`<div class="card">
-        <strong>${order.customer}</strong> (${order.type})<br>${items}
+      div.innerHTML+=`
+      <div class="card">
+        <strong>${order.customer}</strong> (${order.type})<br>
+        ${items}
         Total: ₱${order.total}
       </div>`;
     });
   });
 }
 
-function generateQR(ip){
-  if(!ip) ip="10.148.8.169";
-  const url=`http://${ip}:3000/customerpage.html`;
-  document.getElementById("qrImage").src=
-  `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
+function generateQR(){
+  const url="https://go-beyond.onrender.com/customerpage.html";
+  const qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(url);
+  document.getElementById("qrImage").src=qrUrl;
 }
 
-function updateQR(){
-  const ip=document.getElementById("qrIp").value.trim();
-  if(!ip){ alert("Enter IP"); return; }
-  generateQR(ip);
+function downloadQR(){
+  const img=document.getElementById("qrImage");
+  const link=document.createElement("a");
+  link.href=img.src;
+  link.download="GoBeyondCafe-QR.png";
+  link.click();
 }
 
 function initDashboard(){
