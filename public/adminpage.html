@@ -1,50 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Go Beyond Cafe - Admin Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-body {margin:0;font-family:Poppins,sans-serif;background:#f4f6f9;}
-/* LOGIN */
-#loginForm {width:320px;margin:150px auto;background:white;padding:35px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.1);text-align:center;}
-#loginForm input {width:100%;padding:10px;margin:10px 0;border-radius:6px;border:1px solid #ccc;}
-#loginForm button {width:100%;padding:10px;border:none;border-radius:6px;background:#3e2723;color:white;cursor:pointer;}
-/* DASHBOARD */
-#dashboard {display:flex;height:100vh;display:none;}
-#sidebar {width:70px;background:#3e2723;display:flex;flex-direction:column;align-items:center;padding-top:20px;}
-.sidebar-btn {width:50px;height:50px;margin:10px 0;border:none;border-radius:10px;background:#4e342e;color:white;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;position:relative;}
-.sidebar-btn:hover{background:#6d4c41;}
-.sidebar-btn span.tooltip {visibility:hidden;width:120px;background:#3e2723;color:white;text-align:center;border-radius:6px;padding:5px 0;position:absolute;left:60px;top:50%;transform:translateY(-50%);font-size:12px;z-index:1;}
-.sidebar-btn:hover span.tooltip {visibility:visible;}
-#mainContent {flex:1;padding:20px;overflow-y:auto;}
-.card {background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,.08);display:none;}
-input,select {padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ddd;width:100%;}
-button.primary{background:#3e2723;color:white;}
-button.danger{background:#e53935;color:white;}
-button.success{background:#4caf50;color:white;}
-.menu-item {display:flex;align-items:center;justify-content:space-between;margin:10px 0;padding:10px;border-bottom:1px solid #eee;}
-.menu-item img {width:60px;height:50px;object-fit:cover;border-radius:6px;margin-right:10px;}
-.flex{display:flex;align-items:center;}
-</style>
+  <title>Go Beyond Cafe - Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {margin:0; font-family:Poppins,sans-serif; background:#f4f6f9;}
+
+    /* LOGIN */
+    #loginForm {width:350px;margin:150px auto;background:white;padding:35px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.1); text-align:center;}
+    #loginForm input {width:100%;padding:10px;margin:10px 0;border-radius:6px;border:1px solid #ccc;}
+    #loginForm button {width:100%;padding:10px;border:none;border-radius:6px;background:#3e2723;color:white;cursor:pointer;}
+
+    /* DASHBOARD */
+    #dashboard {display:flex;height:100vh;display:none;}
+    #sidebar {width:70px;background:#3e2723;display:flex;flex-direction:column;align-items:center;padding-top:20px;transition:width 0.3s;}
+    #sidebar.expanded {width:200px;}
+    .sidebar-btn {width:50px;height:50px;margin:10px 0;border:none;border-radius:10px;background:#4e342e;color:white;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;position:relative;transition:all 0.3s;}
+    .sidebar-btn:hover{background:#6d4c41;}
+    .sidebar-btn span.tooltip {visibility:hidden;width:120px;background:#3e2723;color:white;text-align:center;border-radius:6px;padding:5px 0;position:absolute;left:60px;top:50%;transform:translateY(-50%);font-size:12px;z-index:1;}
+    .sidebar-btn:hover span.tooltip {visibility:visible;}
+    #sidebarButtons {display:flex; flex-direction:column; width:100%; align-items:center; transition:all 0.3s;}
+
+    #mainContent {flex:1;padding:20px;overflow-y:auto;}
+
+    .card {background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,.08); display:none;}
+    input, select {padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ddd;width:100%;}
+    button.primary{background:#3e2723;color:white;}
+    button.danger{background:#e53935;color:white;}
+    button.success{background:#4caf50;color:white;}
+    button.info{background:#0288d1;color:white;}
+
+    /* Menu Items */
+    .menu-item {display:flex;align-items:center;justify-content:space-between;margin:10px 0;padding:10px;border-bottom:1px solid #eee;}
+    .menu-item img {width:60px;height:50px;object-fit:cover;border-radius:6px;margin-right:10px;}
+    .flex{display:flex;align-items:center;gap:10px;}
+    .order-card button {margin-right:10px;}
+  </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="loginForm">
-<h2>Go Beyond Cafe Admin</h2>
-<input id="username" placeholder="Username">
-<input id="password" type="password" placeholder="Password"><br>
-<button class="primary" onclick="login()">Login</button>
+  <h2>Go Beyond Cafe Admin</h2>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password"><br>
+  <button class="primary" onclick="login()">Login</button>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard">
   <!-- SIDEBAR -->
   <div id="sidebar">
-    <button class="sidebar-btn" onclick="toggleCleanView()">☰<span class="tooltip">Menu</span></button>
+    <button class="sidebar-btn" onclick="toggleSidebar()">☰<span class="tooltip">Menu</span></button>
     <div id="sidebarButtons">
-      <button class="sidebar-btn" onclick="showSection('qrSection')">📱<span class="tooltip">QR Code</span></button>
+      <button class="sidebar-btn" onclick="showSection('ordersSection')">🛎<span class="tooltip">Orders</span></button>
+      <button class="sidebar-btn" onclick="showSection('menuListSection')">📋<span class="tooltip">Menu List</span></button>
       <button class="sidebar-btn" onclick="showSection('addSection')">➕<span class="tooltip">Add Menu</span></button>
       <button class="sidebar-btn" onclick="showSection('recordSection')">🧾<span class="tooltip">Records</span></button>
       <button class="sidebar-btn" onclick="showSection('profileSection')">⚙️<span class="tooltip">Profile</span></button>
@@ -53,13 +64,6 @@ button.success{background:#4caf50;color:white;}
 
   <!-- MAIN CONTENT -->
   <div id="mainContent">
-    <!-- QR -->
-    <div id="qrSection" class="card">
-      <h3>📱 QR Code</h3>
-      <img id="qrImage" width="200"><br><br>
-      <button class="primary" onclick="downloadQR()">Save QR Code</button>
-    </div>
-
     <!-- ADD MENU -->
     <div id="addSection" class="card">
       <h3>➕ Add Menu Item</h3>
@@ -69,6 +73,18 @@ button.success{background:#4caf50;color:white;}
       <input id="imgUrl" placeholder="Or paste image URL">
       <button class="primary" onclick="addMenu()">Add Item</button>
       <div id="menuList"></div>
+    </div>
+
+    <!-- ORDERS -->
+    <div id="ordersSection" class="card">
+      <h3>🛎 New Orders</h3>
+      <div id="orders"></div>
+    </div>
+
+    <!-- MENU LIST -->
+    <div id="menuListSection" class="card">
+      <h3>📋 Menu List</h3>
+      <div id="menuListMain"></div>
     </div>
 
     <!-- RECORDS -->
@@ -90,28 +106,14 @@ button.success{background:#4caf50;color:white;}
       <button class="primary" onclick="changePassword()">Change Password</button><br><br>
       <button class="danger" onclick="logout()">Logout</button>
     </div>
-
-    <!-- ORDERS -->
-    <div id="ordersSection" class="card">
-      <h3>🧾 New Orders</h3>
-      <div id="orders"></div>
-    </div>
-
-    <!-- MENU LIST -->
-    <div id="menuListSection" class="card">
-      <h3>📋 Menu List</h3>
-      <div id="menuListMain"></div>
-    </div>
-
   </div>
 </div>
 
 <script>
 let token=localStorage.getItem("token");
 let doneData=[];
-let cleanView=false;
 
-/* LOGIN */
+// ================= LOGIN =================
 function login(){
   const username=document.getElementById("username").value;
   const password=document.getElementById("password").value;
@@ -123,64 +125,34 @@ function login(){
   });
 }
 
-/* DASHBOARD */
+// ================= DASHBOARD =================
 function showDashboard(){
   document.getElementById("loginForm").style.display="none";
   document.getElementById("dashboard").style.display="flex";
-  generateQR();
   loadMenu();
-  loadDoneOrders();
   loadOrders();
-  showSection('qrSection'); // default
+  loadDoneOrders();
+  showSection('ordersSection'); // default
 }
 
-/* TOGGLE CLEAN VIEW */
-function toggleCleanView(){
-  cleanView=!cleanView;
-  if(cleanView){
-    document.getElementById("sidebarButtons").style.display="none";
-    showSectionMinimal();
-  } else {
-    document.getElementById("sidebarButtons").style.display="flex";
-    showSection('qrSection');
-  }
+// ================= SIDEBAR =================
+function toggleSidebar(){
+  const sidebar=document.getElementById("sidebar");
+  sidebar.classList.toggle("expanded");
 }
 
-/* SHOW MINIMAL: only orders + menu list */
-function showSectionMinimal(){
-  hideAllSections();
-  document.getElementById("ordersSection").style.display="block";
-  document.getElementById("menuListSection").style.display="block";
-}
-
-/* SHOW SECTION NORMAL */
+// ================= SECTIONS =================
 function showSection(id){
-  hideAllSections();
+  document.querySelectorAll("#mainContent .card").forEach(c=>c.style.display="none");
   document.getElementById(id).style.display="block";
 }
 
-function hideAllSections(){
-  ['qrSection','addSection','recordSection','profileSection','ordersSection','menuListSection'].forEach(s=>document.getElementById(s).style.display='none');
-}
-
-/* PROFILE */
-function changePassword(){
-  const newPass=document.getElementById("newPass").value;
-  fetch("/change-password",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({password:newPass})})
-  .then(()=>alert("Password changed"));
-}
-function logout(){localStorage.removeItem("token");location.reload();}
-
-/* QR */
-function generateQR(){document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent("https://go-beyond.onrender.com/customerpage.html");}
-function downloadQR(){const link=document.createElement("a");link.href=document.getElementById("qrImage").src;link.download="GoBeyondCafe-QR.png";link.click();}
-
-/* MENU */
+// ================= MENU =================
 async function addMenu(){
   let img="";
   if(document.getElementById("imgFile").files[0]) img=await toBase64(document.getElementById("imgFile").files[0]);
   else if(document.getElementById("imgUrl").value) img=document.getElementById("imgUrl").value;
-  else {alert("Add image");return;}
+  else {alert("Add image"); return;}
   fetch("/menu",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({
     name:document.getElementById("name").value,
     price:document.getElementById("price").value,
@@ -201,7 +173,28 @@ function loadMenu(){
   });
 }
 
-/* ORDERS */
+// ================= ORDERS =================
+function loadOrders(){
+  fetch("/orders",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{
+    const div=document.getElementById("orders"); div.innerHTML="";
+    data.forEach(order=>{
+      let items=""; order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`);
+      div.innerHTML+=`
+      <div class="card order-card">
+        <strong>${order.customer}</strong><br>${items}Total: ₱${order.total}<br><br>
+        <button class="success" onclick="markDone(${order.id})">✅ Done</button>
+        <button class="info" onclick="acceptOrder(${order.id})">👍 Accept</button>
+        <button class="danger" onclick="rejectOrder(${order.id})">❌ Reject</button>
+      </div>`;
+    });
+  });
+}
+
+function markDone(id){fetch(`/order/done/${id}`,{method:"POST",headers:{Authorization:token}}).then(loadOrders);}
+function acceptOrder(id){alert("Order Accepted: "+id);}
+function rejectOrder(id){alert("Order Rejected: "+id);}
+
+// ================= RECORDS =================
 function loadDoneOrders(){
   fetch("/orders-done",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{doneData=data;displayFiltered("all");});
 }
@@ -209,7 +202,7 @@ function displayFiltered(type){
   const div=document.getElementById("doneOrders"); div.innerHTML="";
   let now=new Date();
   doneData.forEach(order=>{
-    let orderDate=new Date(order.date||Date.now());
+    let orderDate=new Date(order.createdAt||Date.now());
     let show=true;
     if(type==="today") show=orderDate.toDateString()===now.toDateString();
     if(type==="week"){let w=new Date(); w.setDate(now.getDate()-7); show=orderDate>=w;}
@@ -219,20 +212,17 @@ function displayFiltered(type){
 }
 function filterRecords(value){displayFiltered(value);}
 
-/* NEW ORDERS SECTION */
-function loadOrders(){
-  fetch("/orders",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{
-    const div=document.getElementById("orders"); div.innerHTML="";
-    data.forEach(order=>{
-      let items=""; order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`);
-      div.innerHTML+=`<div class="card"><strong>${order.customer}</strong><br>${items}Total: ₱${order.total}</div>`;
-    });
-  });
+// ================= PROFILE =================
+function changePassword(){
+  const newPass=document.getElementById("newPass").value;
+  fetch("/change-password",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({password:newPass})})
+  .then(()=>alert("Password changed"));
 }
+function logout(){localStorage.removeItem("token"); location.reload();}
 
-/* AUTO LOGIN */
+// ================= AUTO LOGIN =================
 if(token) showDashboard();
-</script>
 
+</script>
 </body>
 </html>
