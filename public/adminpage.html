@@ -20,11 +20,8 @@ input{padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;width:10
 .done-btn{background:#4caf50;color:white}
 .delete-btn{background:#e53935;color:white}
 .add-btn{background:#3e2723;color:white}
-.notification{background:#ffeb3b;padding:10px;border-radius:6px;margin-bottom:10px;display:none;}
 .login-card{background:white;padding:30px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,.1);width:300px;margin:100px auto;}
-.login-card input{width:100%;padding:10px;margin:10px 0;border-radius:6px;border:1px solid #ccc;}
-.login-card button{width:100%;padding:10px;border:none;border-radius:6px;background:#3e2723;color:white;cursor:pointer;}
-.login-card button:hover{opacity:0.9;}
+.login-card button{width:100%;padding:10px;background:#3e2723;color:white;}
 </style>
 </head>
 <body>
@@ -34,6 +31,7 @@ input{padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;width:10
 <button class="logout" onclick="logout()">Logout</button>
 </header>
 
+<!-- LOGIN -->
 <div id="loginForm" class="login-card">
 <h2>Admin Login</h2>
 <input id="username" placeholder="Username">
@@ -41,25 +39,23 @@ input{padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;width:10
 <button onclick="login()">Login</button>
 </div>
 
+<!-- DASHBOARD -->
 <div class="container" id="dashboard">
 
 <!-- QR SECTION -->
 <div class="card">
   <h3>📱 Scan to Order</h3>
-  <p>Customers scan this QR to open menu.</p>
   <img id="qrImage" width="200"><br><br>
   <button class="add-btn" onclick="downloadQR()">Save QR Code</button>
 </div>
 
-<div class="notification" id="notification"></div>
-
-<!-- NEW ORDERS -->
+<!-- ORDERS -->
 <div class="card">
 <h3>🧾 New Orders</h3>
 <div id="orders"></div>
 </div>
 
-<!-- MENU LIST -->
+<!-- MENU -->
 <div class="card">
 <h3>📋 Menu List</h3>
 <div id="menuList"></div>
@@ -91,40 +87,60 @@ input{padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;width:10
 <script>
 let token = localStorage.getItem("token");
 
+/* LOGIN */
 function login(){
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-  if(!username||!password){ alert("Enter credentials"); return; }
+  const username = usernameInput.value;
+  const password = passwordInput.value;
 
-  fetch("/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})})
+  fetch("/login",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username,password})
+  })
   .then(r=>r.json())
   .then(data=>{
     if(data.token){
-      token = data.token;
-      localStorage.setItem("token", token);
-      document.getElementById("loginForm").style.display = "none";
-      document.getElementById("dashboard").style.display = "block";
-      initDashboard();
-    }else{
-      alert(data.msg);
+      token=data.token;
+      localStorage.setItem("token",token);
+      showDashboard();
+    } else {
+      alert("Login failed");
     }
   });
 }
 
-function logout(){ localStorage.removeItem("token"); location.reload(); }
-
-function getBase64(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload=()=>resolve(reader.result);
-    reader.onerror=err=>reject(err);
-  });
+function logout(){
+  localStorage.removeItem("token");
+  location.reload();
 }
 
+function showDashboard(){
+  document.getElementById("loginForm").style.display="none";
+  document.getElementById("dashboard").style.display="block";
+  initDashboard();
+}
+
+/* QR GENERATION */
+function generateQR(){
+  const url="https://go-beyond.onrender.com/customerpage.html";
+  document.getElementById("qrImage").src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="
+    + encodeURIComponent(url);
+}
+
+function downloadQR(){
+  const link=document.createElement("a");
+  link.href=document.getElementById("qrImage").src;
+  link.download="GoBeyondCafe-QR.png";
+  link.click();
+}
+
+/* MENU */
 function loadMenu(){
-  fetch("/menu").then(r=>r.json()).then(data=>{
-    const div=document.getElementById("menuList"); 
+  fetch("/menu")
+  .then(r=>r.json())
+  .then(data=>{
+    const div=document.getElementById("menuList");
     div.innerHTML="";
     data.forEach(item=>{
       div.innerHTML+=`
@@ -140,121 +156,114 @@ function loadMenu(){
 }
 
 async function addMenu(){
-  const name=document.getElementById("name").value;
-  const price=document.getElementById("price").value;
-  const file=document.getElementById("imgFile").files[0];
-  const imgUrl=document.getElementById("imgUrl").value;
+  const name=nameInput.value;
+  const price=priceInput.value;
+  const file=imgFile.files[0];
+  const url=imgUrl.value;
 
-  if(!name||!price){
-    alert("Enter name and price");
-    return;
-  }
+  if(!name||!price){ alert("Enter name and price"); return; }
 
   let img="";
 
   if(file){
-    img=await getBase64(file);
-  }else if(imgUrl){
-    img=imgUrl;
-  }else{
+    img=await toBase64(file);
+  } else if(url){
+    img=url;
+  } else {
     alert("Upload image or paste URL");
     return;
   }
 
   fetch("/menu",{
     method:"POST",
-    headers:{"Content-Type":"application/json","Authorization":token},
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":token
+    },
     body:JSON.stringify({name,price,img})
   })
-  .then(()=>{
-    loadMenu();
-    document.getElementById("name").value="";
-    document.getElementById("price").value="";
-    document.getElementById("imgFile").value="";
-    document.getElementById("imgUrl").value="";
-  });
+  .then(()=>{ loadMenu(); });
 }
 
 function deleteMenu(id){
-  fetch("/menu/"+id,{method:"DELETE",headers:{Authorization:token}})
-  .then(()=>loadMenu());
+  fetch("/menu/"+id,{
+    method:"DELETE",
+    headers:{Authorization:token}
+  }).then(()=>loadMenu());
 }
 
-let lastOrderCount=0;
+function toBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=error=>reject(error);
+  });
+}
+
+/* ORDERS */
 function loadOrders(){
   fetch("/orders",{headers:{Authorization:token}})
   .then(r=>r.json())
   .then(data=>{
-    const div=document.getElementById("orders"); 
+    const div=document.getElementById("orders");
     div.innerHTML="";
-    if(data.length>lastOrderCount) alert("New Order Received!");
-    lastOrderCount=data.length;
-
     data.forEach(order=>{
       let items="";
-      order.items.forEach(i=>{ items+=`${i.name} x${i.qty}<br>`; });
+      order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`);
       div.innerHTML+=`
       <div class="card">
-        <strong>${order.customer}</strong> (${order.type})<br>
-        ${items}
-        Total: ₱${order.total}<br>
-        <button class="done-btn" onclick="markDone(${order.id})">Mark Done</button>
+      <strong>${order.customer}</strong><br>
+      ${items}
+      Total: ₱${order.total}<br>
+      <button class="done-btn" onclick="markDone(${order.id})">Mark Done</button>
       </div>`;
     });
   });
 }
 
 function markDone(id){
-  fetch("/order/done/"+id,{method:"POST",headers:{Authorization:token}})
-  .then(()=>{ loadOrders(); loadDoneOrders(); });
+  fetch("/order/done/"+id,{
+    method:"POST",
+    headers:{Authorization:token}
+  }).then(()=>{loadOrders();loadDoneOrders();});
 }
 
 function loadDoneOrders(){
   fetch("/orders-done",{headers:{Authorization:token}})
   .then(r=>r.json())
   .then(data=>{
-    const div=document.getElementById("doneOrders"); 
+    const div=document.getElementById("doneOrders");
     div.innerHTML="";
     data.forEach(order=>{
       let items="";
-      order.items.forEach(i=>{ items+=`${i.name} x${i.qty}<br>`; });
+      order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`);
       div.innerHTML+=`
       <div class="card">
-        <strong>${order.customer}</strong> (${order.type})<br>
-        ${items}
-        Total: ₱${order.total}
+      <strong>${order.customer}</strong><br>
+      ${items}
+      Total: ₱${order.total}
       </div>`;
     });
   });
 }
 
-function generateQR(){
-  const url="https://go-beyond.onrender.com/customerpage.html";
-  const qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(url);
-  document.getElementById("qrImage").src=qrUrl;
-}
-
-function downloadQR(){
-  const img=document.getElementById("qrImage");
-  const link=document.createElement("a");
-  link.href=img.src;
-  link.download="GoBeyondCafe-QR.png";
-  link.click();
-}
-
+/* INIT */
 function initDashboard(){
+  generateQR();
   loadMenu();
   loadOrders();
   loadDoneOrders();
-  generateQR();
-  setInterval(()=>{ loadOrders(); loadDoneOrders(); },3000);
+  setInterval(loadOrders,3000);
 }
 
+/* AUTO LOGIN IF TOKEN EXISTS */
 if(token){
-  document.getElementById("loginForm").style.display="none";
-  document.getElementById("dashboard").style.display="block";
-  initDashboard();
+  showDashboard();
 }
+
+/* GENERATE QR EVEN IF NOT LOGGED IN (SAFE) */
+document.addEventListener("DOMContentLoaded",generateQR);
 </script>
 
 </body>
