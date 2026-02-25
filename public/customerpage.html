@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Go Beyond Cafe</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+<style>
+body {
+    font-family: Poppins, sans-serif;
+    margin: 0;
+    background: #f4f1ed;
+}
+header {
+    background: #3e2723;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+h1 { margin: 0; font-size: 2rem; }
+p { margin: 5px 0; font-size: 1rem; }
+
+.screen {
+    display: none;
+    padding: 20px;
+    animation: fadeIn 0.5s ease-in-out;
+}
+.screen.active { display: block; }
+
+#welcomeScreen {
+    text-align: center;
+}
+#welcomeScreen img {
+    width: 80%;
+    max-width: 300px;
+    border-radius: 15px;
+    margin: 20px 0;
+}
+#welcomeScreen button {
+    background: #3e2723;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 15px;
+}
+#welcomeScreen button:hover { opacity: 0.9; }
+
+.bestSellers {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.bestSellers .card {
+    width: 120px;
+    background: white;
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.1);
+    text-align: center;
+}
+
+#orderScreen .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+    gap: 20px;
+}
+.card {
+    background:white;border-radius:15px;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,.1);text-align:center;
+}
+.card img{width:100%;height:150px;object-fit:cover;}
+.card button{background:#c49a6c;color:white;border:none;padding:8px 16px;border-radius:8px;margin:10px 0;cursor:pointer;transition:0.2s;}
+.card button:hover{opacity:0.9;}
+
+.cart {
+    background:white;margin:20px;padding:20px;border-radius:15px;box-shadow:0 6px 15px rgba(0,0,0,.1);
+}
+.cart input, .cart button{width:100%;padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;}
+.cart button.active{background:#3e2723;color:white;}
+ul{list-style:none;padding-left:0;}
+
+@keyframes fadeIn {
+    from {opacity:0;}
+    to {opacity:1;}
+}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Go Beyond Cafe</h1>
+<p>Scan • Order • Enjoy</p>
+</header>
+
+<!-- ===== WELCOME SCREEN ===== -->
+<div id="welcomeScreen" class="screen active">
+    <h1>Welcome to Go Beyond Cafe!</h1>
+    <p>Mabilao, Sanfabian . 8:00am - 9:00pm</p>
+    
+  
+
+     <h2>Go Beyond Cafe Best Sellers</h2>
+   
+    <div class="bestSellers" id="bestSellers">
+        <!-- Best sellers will load here -->
+    </div>
+    <button onclick="startOrdering()">Start Order</button>
+</div>
+
+<!-- ===== ORDERING SCREEN ===== -->
+<div id="orderScreen" class="screen">
+    <div class="grid" id="menu"></div>
+
+    <div class="cart">
+        <h3>Your Order</h3>
+        <input id="name" placeholder="Your Name"><br>
+        <button id="btnDine" onclick="setType('Dine In', this)">Dine In</button>
+        <button id="btnTake" onclick="setType('Take Out', this)">Take Out</button>
+        <ul id="list"></ul>
+        <h3>Total: ₱<span id="total">0</span></h3>
+        <button onclick="checkout()">Send Order</button>
+    </div>
+</div>
+
+<script>
+let menu=[], cart=[], total=0, type="";
+
+// ===== Welcome Screen =====
+function startOrdering(){
+    document.getElementById("welcomeScreen").classList.remove("active");
+    document.getElementById("orderScreen").classList.add("active");
+}
+
+// Load Best Sellers (top 3)
+function loadBestSellers(){
+    fetch("/menu")
+    .then(res=>res.json())
+    .then(data=>{
+        menu = data;
+        const best = menu.slice(0,3);
+        const div = document.getElementById("bestSellers");
+        div.innerHTML="";
+        best.forEach(item=>{
+            div.innerHTML+=`
+                <div class="card">
+                    <img src="${item.img}">
+                    <h4>${item.name}</h4>
+                    <p>₱${item.price}</p>
+                </div>
+            `;
+        });
+    });
+}
+
+// ===== ORDERING SCREEN =====
+function loadMenu(){
+  fetch("/menu")
+  .then(res=>res.json())
+  .then(data=>{
+    menu=data;
+    const menuDiv=document.getElementById("menu");
+    menuDiv.innerHTML="";
+    menu.forEach((m,i)=>{
+      menuDiv.innerHTML+=`
+      <div class="card">
+        <img src="${m.img}">
+        <h3>${m.name}</h3>
+        <p>₱${m.price}</p>
+        <button onclick="add(${i}, this)">Add</button>
+      </div>`;
+    });
+  });
+}
+
+function add(i, btn){
+  let item=menu[i];
+  let exist=cart.find(x=>x.id===item.id);
+  if(exist) exist.qty++;
+  else cart.push({...item, qty:1});
+  render();
+  btn.classList.add('active');
+  setTimeout(()=>{ btn.classList.remove('active'); },300);
+}
+
+function render(){
+  total=0;
+  let list=document.getElementById("list");
+  list.innerHTML="";
+  cart.forEach((c,i)=>{
+    total+=c.price*c.qty;
+    list.innerHTML+=`<li>${c.name} x${c.qty} <button onclick="removeItem(${i})">X</button></li>`;
+  });
+  document.getElementById("total").innerText=total;
+}
+
+function removeItem(i){ cart.splice(i,1); render(); }
+
+function setType(t, btn){
+  type=t;
+  document.getElementById("btnDine").classList.remove('active');
+  document.getElementById("btnTake").classList.remove('active');
+  btn.classList.add('active');
+}
+
+function checkout(){
+  let name=document.getElementById("name").value;
+  if(!name || cart.length==0 || !type){ alert("Complete details"); return; }
+  fetch("/order",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({customer:name, type, items:cart, total})
+  }).then(res=>res.json())
+    .then(()=>{ alert("Order Sent!"); cart=[]; render(); document.getElementById("name").value=""; });
+}
+
+// Load initial data
+loadBestSellers();
+loadMenu();
+setInterval(loadMenu, 5000);
+</script>
+
+</body>
+</html>

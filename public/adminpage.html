@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard - Go Beyond Cafe</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Poppins,sans-serif;background:#f4f6f9;}
+header{background:#3e2723;color:white;padding:20px;display:flex;justify-content:space-between;align-items:center;}
+header h2{margin:0}
+button{padding:8px 14px;border:none;border-radius:6px;cursor:pointer;}
+.logout{background:#e53935;color:white}
+.container{padding:20px;max-width:1000px;margin:auto;display:none;}
+.card{background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 5px 15px rgba(0,0,0,.1);}
+input{padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ccc;width:100%;}
+.menu-item{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:10px;border-bottom:1px solid #eee;}
+.menu-item img{width:60px;height:50px;object-fit:cover;border-radius:6px;margin-right:10px;}
+.flex{display:flex;align-items:center;gap:10px}
+.done-btn{background:#4caf50;color:white}
+.delete-btn{background:#e53935;color:white}
+.add-btn{background:#3e2723;color:white}
+.notification{background:#ffeb3b;padding:10px;border-radius:6px;margin-bottom:10px;display:none;}
+.login-card{background:white;padding:30px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,.1);width:300px;margin:100px auto;}
+.login-card input{width:100%;padding:10px;margin:10px 0;border-radius:6px;border:1px solid #ccc;}
+.login-card button{width:100%;padding:10px;border:none;border-radius:6px;background:#3e2723;color:white;cursor:pointer;}
+.login-card button:hover{opacity:0.9;}
+</style>
+</head>
+<body>
+
+<header>
+<h2>Go Beyond Cafe - Admin</h2>
+<button class="logout" onclick="logout()">Logout</button>
+</header>
+
+<div id="loginForm" class="login-card">
+<h2>Admin Login</h2>
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+</div>
+
+<div class="container" id="dashboard">
+
+<div class="card">
+  <h3>📱 QR Code - Ready to Scan</h3>
+  <p>Scan to open menu:</p>
+  <img id="qrImage" width="180">
+  <input id="qrIp" placeholder="Enter Server IPv4">
+  <button onclick="updateQR()">Update QR</button>
+</div>
+
+<div class="notification" id="notification"></div>
+
+<div class="card">
+<h3>🧾 New Orders</h3>
+<div id="orders"></div>
+</div>
+
+<div class="card">
+<h3>📋 Menu List</h3>
+<div id="menuList"></div>
+</div>
+
+<div class="card">
+<h3>➕ Add Menu Item</h3>
+<input id="name" placeholder="Item Name">
+<input id="price" type="number" placeholder="Price">
+<input type="file" id="imgFile" accept="image/*">
+<button class="add-btn" onclick="addMenu()">Add Item</button>
+</div>
+
+<div class="card">
+<h3>✅ Records of Orders Done</h3>
+<div id="doneOrders"></div>
+</div>
+
+</div>
+
+<script>
+let token = localStorage.getItem("token");
+
+function login(){
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  if(!username||!password){ alert("Enter credentials"); return; }
+
+  fetch("/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})})
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.token){
+      token = data.token;
+      localStorage.setItem("token", token);
+      document.getElementById("loginForm").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      initDashboard();
+    }else{
+      alert(data.msg);
+    }
+  });
+}
+
+function logout(){ localStorage.removeItem("token"); location.reload(); }
+
+function getBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=err=>reject(err);
+  });
+}
+
+function loadMenu(){
+  fetch("/menu").then(r=>r.json()).then(data=>{
+    const div=document.getElementById("menuList"); div.innerHTML="";
+    data.forEach(item=>{
+      div.innerHTML+=`<div class="menu-item">
+        <div class="flex"><img src="${item.img}"><span>${item.name} - ₱${item.price}</span></div>
+        <button class="delete-btn" onclick="deleteMenu(${item.id})">Delete</button>
+      </div>`;
+    });
+  });
+}
+
+async function addMenu(){
+  const name=document.getElementById("name").value;
+  const price=document.getElementById("price").value;
+  const file=document.getElementById("imgFile").files[0];
+  if(!name||!price||!file){ alert("Complete all fields"); return; }
+  const img = await getBase64(file);
+  fetch("/menu",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({name,price,img})})
+  .then(()=>{ loadMenu(); });
+}
+
+function deleteMenu(id){
+  fetch("/menu/"+id,{method:"DELETE",headers:{Authorization:token}})
+  .then(()=>loadMenu());
+}
+
+let lastOrderCount=0;
+function loadOrders(){
+  fetch("/orders",{headers:{Authorization:token}})
+  .then(r=>r.json())
+  .then(data=>{
+    const div=document.getElementById("orders"); div.innerHTML="";
+    if(data.length>lastOrderCount) alert("New Order Received!");
+    lastOrderCount = data.length;
+    data.forEach(order=>{
+      let items="";
+      order.items.forEach(i=>{ items+=`${i.name} x${i.qty}<br>`; });
+      div.innerHTML+=`<div class="card">
+        <strong>${order.customer}</strong> (${order.type})<br>${items}
+        Total: ₱${order.total}<br>
+        <button class="done-btn" onclick="markDone(${order.id})">Mark Done</button>
+      </div>`;
+    });
+  });
+}
+
+function markDone(id){
+  fetch("/order/done/"+id,{method:"POST",headers:{Authorization:token}})
+  .then(()=>{ loadOrders(); loadDoneOrders(); });
+}
+
+function loadDoneOrders(){
+  fetch("/orders-done",{headers:{Authorization:token}})
+  .then(r=>r.json())
+  .then(data=>{
+    const div=document.getElementById("doneOrders"); div.innerHTML="";
+    data.forEach(order=>{
+      let items="";
+      order.items.forEach(i=>{ items+=`${i.name} x${i.qty}<br>`; });
+      div.innerHTML+=`<div class="card">
+        <strong>${order.customer}</strong> (${order.type})<br>${items}
+        Total: ₱${order.total}
+      </div>`;
+    });
+  });
+}
+
+function generateQR(ip){
+  if(!ip) ip="10.148.8.169";
+  const url=`http://${ip}:3000/customerpage.html`;
+  document.getElementById("qrImage").src=
+  `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
+}
+
+function updateQR(){
+  const ip=document.getElementById("qrIp").value.trim();
+  if(!ip){ alert("Enter IP"); return; }
+  generateQR(ip);
+}
+
+function initDashboard(){
+  loadMenu();
+  loadOrders();
+  loadDoneOrders();
+  generateQR();
+  setInterval(()=>{ loadOrders(); loadDoneOrders(); },3000);
+}
+
+if(token){
+  document.getElementById("loginForm").style.display="none";
+  document.getElementById("dashboard").style.display="block";
+  initDashboard();
+}
+</script>
+
+</body>
+</html>
