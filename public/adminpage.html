@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Go Beyond Cafe - Admin Dashboard</title>
+<title>Go Beyond Cafe - Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -15,16 +15,11 @@ body{margin:0;font-family:Poppins,sans-serif;background:#f4f6f9;}
 .sidebar-btn:hover{background:#6d4c41;}
 #mainContent{flex:1;padding:20px;overflow-y:auto;background:white;}
 .card{background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,.08);}
-button.primary{background:#3e2723;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
-button.danger{background:#e53935;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
-button.success{background:#4caf50;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
 .menu-item{display:flex;align-items:center;justify-content:space-between;margin:10px 0;padding:10px;border-bottom:1px solid #eee;}
 .menu-item img{width:60px;height:50px;object-fit:cover;border-radius:6px;margin-right:10px;}
-.flex{display:flex;align-items:center;}
-input[type=text],input[type=number]{padding:6px 8px;margin:4px;border-radius:6px;border:1px solid #ccc;width:150px;}
-input[type=file]{margin:4px;}
-.filter-btns button{margin:0 4px;padding:6px 10px;border-radius:6px;border:none;background:#3e2723;color:white;cursor:pointer;}
-.filter-btns button.active{background:#6d4c41;}
+button.primary{background:#3e2723;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;margin:2px;}
+button.success{background:#4caf50;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;margin:2px;}
+button.danger{background:#e53935;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;margin:2px;}
 </style>
 </head>
 <body>
@@ -41,17 +36,30 @@ input[type=file]{margin:4px;}
 <div id="dashboard" style="display:none;">
 <div id="sidebar">
   <h2>Go Beyond Cafe</h2>
-  <div class="sidebar-btn active" onclick="showSection('todayOrders',this)">🧾 Orders Today</div>
+  <div class="sidebar-btn active" onclick="showSection('ordersSection',this)">🧾 Orders</div>
+  <div class="sidebar-btn" onclick="showSection('menuSection',this)">☕ Menu</div>
+  <div class="sidebar-btn" onclick="showSection('qrSection',this)">📱 QR</div>
   <div class="sidebar-btn" onclick="showSection('profileSection',this)">⚙️ Profile</div>
-  <div class="sidebar-btn" onclick="showSection('addSection',this)">➕ Add Item</div>
-  <div class="sidebar-btn" onclick="showSection('qrSection',this)">📱 QR Code</div>
 </div>
 
 <div id="mainContent">
-<!-- Orders Today -->
-<div id="todayOrders" class="card">
+<!-- Orders -->
+<div id="ordersSection" class="card">
 <h3>📋 Orders Today</h3>
 <div id="ordersToday"></div>
+</div>
+
+<!-- Menu -->
+<div id="menuSection" class="card" style="display:none">
+<h3>☕ Menu Items</h3>
+<div id="menuList"></div>
+</div>
+
+<!-- QR -->
+<div id="qrSection" class="card" style="display:none">
+<h3>📱 QR Code</h3>
+<img id="qrImage" width="200"><br>
+<button class="primary" onclick="generateQR()">Refresh QR</button>
 </div>
 
 <!-- Profile -->
@@ -61,30 +69,11 @@ input[type=file]{margin:4px;}
 <button class="primary" onclick="changePassword()">Change Password</button><br><br>
 <button class="danger" onclick="logout()">Logout</button>
 </div>
-
-<!-- Add Menu -->
-<div id="addSection" class="card" style="display:none">
-<h3>➕ Add Menu Item</h3>
-<input id="name" placeholder="Item Name">
-<input id="price" type="number" placeholder="Price">
-<input type="file" id="imgFile" accept="image/*">
-<input id="imgUrl" placeholder="Or paste image URL"><br>
-<label><input type="checkbox" id="bestSeller"> Best Seller</label>
-<button class="primary" onclick="addMenu()">Add Item</button>
-</div>
-
-<!-- QR Code -->
-<div id="qrSection" class="card" style="display:none">
-<h3>📱 QR Code</h3>
-<img id="qrImage" width="200"><br><br>
-<button class="primary" onclick="generateQR()">Refresh QR</button>
-</div>
 </div>
 </div>
 
 <script>
 let token=localStorage.getItem("token");
-let menuData=[];
 
 // LOGIN
 function login(){
@@ -101,14 +90,13 @@ function login(){
 function showDashboard(){
   document.getElementById("loginForm").style.display="none";
   document.getElementById("dashboard").style.display="flex";
-  showSection('todayOrders',document.querySelector('.sidebar-btn.active'));
+  showSection('ordersSection',document.querySelector('.sidebar-btn.active'));
   loadOrdersToday();
+  loadMenuItems();
 }
 function showSection(id,btn){
-  // Hide all
-  ['todayOrders','profileSection','addSection','qrSection'].forEach(s=>document.getElementById(s).style.display='none');
+  ['ordersSection','menuSection','qrSection','profileSection'].forEach(s=>document.getElementById(s).style.display='none');
   document.getElementById(id).style.display='block';
-  // sidebar active
   document.querySelectorAll('.sidebar-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
 }
@@ -123,18 +111,7 @@ function changePassword(){
   .then(()=>alert("Password changed"));
 }
 
-// MENU
-async function addMenu(){
-  let img="";
-  if(document.getElementById("imgFile").files[0]) img=await toBase64(document.getElementById("imgFile").files[0]);
-  else if(document.getElementById("imgUrl").value) img=document.getElementById("imgUrl").value;
-  else {alert("Add image"); return;}
-  const best = document.getElementById("bestSeller").checked;
-  fetch("/menu",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({name:document.getElementById("name").value,price:document.getElementById("price").value,img,best})});
-}
-function toBase64(file){return new Promise(res=>{let reader=new FileReader();reader.readAsDataURL(file);reader.onload=()=>res(reader.result);});}
-
-// ORDERS TODAY
+// ORDERS
 function loadOrdersToday(){ 
   fetch("/orders?filter=today",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{ 
     const div=document.getElementById("ordersToday"); div.innerHTML=""; 
@@ -149,11 +126,19 @@ function markDone(id){
   .then(()=>loadOrdersToday());
 }
 
-// QR
-function generateQR(){
-  const qrData=window.location.origin+"/";
-  document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(qrData);
+// MENU
+function loadMenuItems(){
+  fetch("/menu",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{
+    const div=document.getElementById("menuList"); div.innerHTML="";
+    data.forEach(item=>{
+      div.innerHTML+=`<div class="menu-item"><img src="${item.img}"><span>${item.name} - ₱${item.price}</span><button class="danger" onclick="deleteMenu(${item.id})">Delete</button></div>`;
+    });
+  });
 }
+function deleteMenu(id){fetch("/menu/"+id,{method:"DELETE",headers:{Authorization:token}}).then(loadMenuItems());}
+
+// QR
+function generateQR(){document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(window.location.origin+"/");}
 
 if(token) showDashboard();
 </script>
