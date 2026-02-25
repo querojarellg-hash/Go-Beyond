@@ -1,95 +1,149 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Go Beyond Cafe - Customer</title>
+<title>Go Beyond Cafe</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 <style>
-body{margin:0;font-family:Poppins,sans-serif;background:#fefefe;}
-header{background:#3e2723;color:white;padding:15px;text-align:center;font-size:24px;}
-#menuList{display:flex;flex-wrap:wrap;justify-content:center;margin:10px;}
-.menu-item{border:1px solid #ddd;border-radius:12px;margin:10px;padding:10px;width:150px;text-align:center;box-shadow:0 5px 20px rgba(0,0,0,0.05);}
-.menu-item img{width:100%;height:100px;object-fit:cover;border-radius:8px;}
-button{padding:8px 12px;border:none;border-radius:6px;background:#3e2723;color:white;cursor:pointer;margin-top:5px;}
-#cart{position:fixed;bottom:0;right:0;background:white;padding:15px;box-shadow:0 -2px 15px rgba(0,0,0,0.1);width:300px;max-height:50%;overflow:auto;border-top-left-radius:12px;border-top-right-radius:12px;}
-#cart h3{margin-top:0;}
-.cart-item{display:flex;justify-content:space-between;margin-bottom:5px;}
-#placeOrder{background:#4caf50;margin-top:10px;width:100%;}
+body{font-family:Poppins,sans-serif;margin:0;background:#f4f1ed;}
+header{background:#3e2723;color:white;padding:20px;text-align:center;}
+.screen{display:none;padding:20px;}
+.screen.active{display:block;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;}
+.card{background:white;border-radius:15px;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,.1);text-align:center;}
+.card img{width:100%;height:150px;object-fit:cover;}
+.card button{background:#c49a6c;color:white;border:none;padding:8px 16px;border-radius:8px;margin:10px 0;cursor:pointer;}
+.cart{background:white;margin:20px;padding:20px;border-radius:15px;}
+ul{list-style:none;padding:0;}
+button.wallet{background:#4caf50;color:white;border:none;padding:8px 16px;border-radius:8px;margin:10px 5px;cursor:pointer;}
 </style>
 </head>
 <body>
-<header>Welcome to Go Beyond Cafe</header>
-<div id="menuList"></div>
 
-<div id="cart">
-<h3>🛒 Your Order</h3>
-<div id="cartItems"></div>
-<div id="cartTotal"></div>
-<button id="placeOrder">Place Order</button>
+<header>
+<h1>Go Beyond Cafe</h1>
+<p>Scan • Order • Enjoy</p>
+</header>
+
+<!-- Welcome Screen -->
+<div id="welcomeScreen" class="screen active">
+<h2>Welcome to Go Beyond Cafe!</h2>
+<p>Mabilao, San Fabian • 8:00am - 9:00pm</p>
+<button onclick="startOrdering()">Start Order</button>
+</div>
+
+<!-- Order Screen -->
+<div id="orderScreen" class="screen">
+<div class="grid" id="menu"></div>
+
+<div class="cart">
+<h3>Your Order</h3>
+<input id="name" placeholder="Your Name">
+<button onclick="setType('Dine In')">Dine In</button>
+<button onclick="setType('Take Out')">Take Out</button>
+<ul id="list"></ul>
+<h3>Total: ₱<span id="total">0</span></h3>
+
+<!-- Cash Checkout -->
+<button onclick="checkout()">Send Order (Cash)</button>
+<br>
+
+<!-- E-Wallet Checkout -->
+<h4>Or Pay Online:</h4>
+<button class="wallet" onclick="payWallet('GCash')">GCash</button>
+<button class="wallet" onclick="payWallet('PayMaya')">PayMaya</button>
+</div>
 </div>
 
 <script>
-let menuData=[];
-let cart=[];
+let menu=[], cart=[], total=0, type="";
 
-/* LOAD MENU */
+function startOrdering(){
+  document.getElementById("welcomeScreen").classList.remove("active");
+  document.getElementById("orderScreen").classList.add("active");
+  loadMenu();
+}
+
+// Load menu from backend
 function loadMenu(){
   fetch("/menu").then(r=>r.json()).then(data=>{
-    menuData=data;
-    const div=document.getElementById("menuList");
+    menu=data;
+    const div=document.getElementById("menu");
     div.innerHTML="";
-    data.forEach((item,i)=>{
+    menu.forEach((m,i)=>{
       div.innerHTML+=`
-        <div class="menu-item">
-          <img src="${item.img}">
-          <strong>${item.name}</strong>
-          <div>₱${item.price}</div>
-          <button onclick="addToCart(${i})">Add</button>
-        </div>
-      `;
+      <div class="card">
+        <img src="${m.img}">
+        <h3>${m.name}</h3>
+        <p>₱${m.price}</p>
+        <button onclick="add(${i})">Add</button>
+      </div>`;
     });
   });
 }
 
-/* CART LOGIC */
-function addToCart(index){
-  const item=menuData[index];
-  const existing=cart.find(i=>i.id===item.id);
-  if(existing) existing.qty+=1;
+// Add item to cart
+function add(i){
+  let item=menu[i];
+  let exist=cart.find(x=>x.id===item.id);
+  if(exist) exist.qty++;
   else cart.push({...item, qty:1});
-  renderCart();
+  render();
 }
 
-function renderCart(){
-  const div=document.getElementById("cartItems");
-  div.innerHTML="";
-  let total=0;
-  cart.forEach(i=>{
-    total+=i.price*i.qty;
-    div.innerHTML+=`<div class="cart-item">${i.name} x${i.qty} <span>₱${i.price*i.qty}</span></div>`;
+// Render cart
+function render(){
+  total=0;
+  const list=document.getElementById("list");
+  list.innerHTML="";
+  cart.forEach((c,i)=>{
+    total+=c.price*c.qty;
+    list.innerHTML+=`<li>${c.name} x${c.qty} <button onclick="removeItem(${i})">X</button></li>`;
   });
-  document.getElementById("cartTotal").innerHTML=`Total: ₱${total}`;
+  document.getElementById("total").innerText=total;
 }
 
-/* PLACE ORDER */
-document.getElementById("placeOrder").onclick = ()=>{
-  if(cart.length===0){alert("Your cart is empty"); return;}
-  const customer=prompt("Enter your name:");
-  if(!customer)return;
-  fetch("/order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-    customer,
-    type:"walk-in",
-    items:cart,
-    total:cart.reduce((a,b)=>a+b.price*b.qty,0)
-  })}).then(r=>r.json()).then(data=>{
-    alert("Order placed! Thank you 😊");
+// Remove item
+function removeItem(i){ cart.splice(i,1); render(); }
+
+// Set order type
+function setType(t){ type=t; }
+
+// Checkout with cash
+function checkout(){
+  sendOrder("Cash");
+}
+
+// E-Wallet payment (mock)
+function payWallet(method){
+  sendOrder(method);
+}
+
+// Send order to backend
+function sendOrder(payment){
+  const name=document.getElementById("name").value;
+  if(!name || cart.length==0 || !type){
+    alert("Complete your name, order, and type!");
+    return;
+  }
+
+  // Confirm payment for e-wallet
+  if(payment !== "Cash"){
+    const confirmed = confirm(`Pay ₱${total} via ${payment}?`);
+    if(!confirmed) return;
+  }
+
+  fetch("/order", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({customer:name, type, items:cart, total, payment})
+  }).then(()=>{
+    alert(`Order sent successfully! Payment: ${payment}`);
     cart=[];
-    renderCart();
+    render();
   });
 }
-
-/* INITIAL LOAD */
-loadMenu();
 </script>
+
 </body>
 </html>
