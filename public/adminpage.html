@@ -1,144 +1,134 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Go Beyond Cafe - Admin</title>
+<title>Go Beyond Cafe - Admin Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 body{margin:0;font-family:Poppins,sans-serif;background:#f4f6f9;}
-#dashboard{display:flex;height:100vh;}
-#sidebar{width:80px;background:#3e2723;color:white;display:flex;flex-direction:column;align-items:center;padding-top:20px;position:relative;}
-#sidebar h2{font-size:14px;margin-bottom:30px;text-align:center;}
-.sidebar-btn{width:100%;padding:15px 0;text-align:center;cursor:pointer;color:white;font-size:22px;display:flex;align-items:center;justify-content:center;transition:0.3s;border-radius:0;}
-.sidebar-btn.active{background:white;color:#3e2723;font-weight:bold;}
+#dashboard{display:flex;height:100vh;display:none;}
+#sidebar{width:70px;background:#3e2723;display:flex;flex-direction:column;align-items:center;padding-top:20px;}
+.sidebar-btn{width:50px;height:50px;margin:10px 0;border:none;border-radius:10px;background:#4e342e;color:white;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;position:relative;}
 .sidebar-btn:hover{background:#6d4c41;}
-#mainContent{flex:1;padding:20px;overflow-y:auto;background:white;}
+.sidebar-btn span.tooltip{visibility:hidden;width:120px;background:#3e2723;color:white;text-align:center;border-radius:6px;padding:5px 0;position:absolute;left:60px;top:50%;transform:translateY(-50%);font-size:12px;z-index:1;}
+.sidebar-btn:hover span.tooltip{visibility:visible;}
+#sidebarButtons{display:none;flex-direction:column;align-items:center;}
+#mainContent{flex:1;padding:20px;overflow-y:auto;}
 .card{background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,.08);}
+button.primary{background:#3e2723;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
+button.danger{background:#e53935;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
+button.success{background:#4caf50;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;}
 .menu-item{display:flex;align-items:center;justify-content:space-between;margin:10px 0;padding:10px;border-bottom:1px solid #eee;}
 .menu-item img{width:60px;height:50px;object-fit:cover;border-radius:6px;margin-right:10px;}
-button.primary{background:#3e2723;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;margin:2px;}
-button.success{background:#4caf50;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;margin:2px;}
-button.danger{background:#e53935;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;margin:2px;}
+.flex{display:flex;align-items:center;}
+input[type=text],input[type=number]{padding:6px 8px;margin:4px;border-radius:6px;border:1px solid #ccc;width:150px;}
+input[type=file]{margin:4px;}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div id="loginForm" style="max-width:350px;margin:80px auto;padding:30px;background:white;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.1);text-align:center;">
-  <h2>Go Beyond Cafe Admin</h2>
-  <input id="username" placeholder="Username"><br>
-  <input id="password" type="password" placeholder="Password"><br>
-  <button class="primary" onclick="login()">Login</button>
+<div id="loginForm">
+<h2>Go Beyond Cafe Admin</h2>
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password"><br>
+<button class="primary" onclick="login()">Login</button>
 </div>
 
 <!-- DASHBOARD -->
-<div id="dashboard" style="display:none;">
+<div id="dashboard">
 <div id="sidebar">
-  <h2>Go Beyond Cafe</h2>
-  <div class="sidebar-btn active" onclick="showSection('ordersSection',this)">🧾 Orders</div>
-  <div class="sidebar-btn" onclick="showSection('menuSection',this)">☕ Menu</div>
-  <div class="sidebar-btn" onclick="showSection('qrSection',this)">📱 QR</div>
-  <div class="sidebar-btn" onclick="showSection('profileSection',this)">⚙️ Profile</div>
+  <button class="sidebar-btn" onclick="toggleSidebarMenu()">☰<span class="tooltip">Menu</span></button>
+  <div id="sidebarButtons">
+    <button class="sidebar-btn" onclick="showSection('qrSection')">📱<span class="tooltip">QR Code</span></button>
+    <button class="sidebar-btn" onclick="showSection('addSection')">➕<span class="tooltip">Add Menu</span></button>
+    <button class="sidebar-btn" onclick="showSection('recordSection')">🧾<span class="tooltip">Orders</span></button>
+    <button class="sidebar-btn" onclick="showSection('profileSection')">⚙️<span class="tooltip">Profile</span></button>
+  </div>
 </div>
 
 <div id="mainContent">
-<!-- Orders -->
-<div id="ordersSection" class="card">
-<h3>📋 Orders Today</h3>
-<div id="ordersToday"></div>
-</div>
-
-<!-- Menu -->
-<div id="menuSection" class="card" style="display:none">
-<h3>☕ Menu Items</h3>
-<div id="menuList"></div>
-</div>
-
-<!-- QR -->
 <div id="qrSection" class="card" style="display:none">
 <h3>📱 QR Code</h3>
-<img id="qrImage" width="200"><br>
-<button class="primary" onclick="generateQR()">Refresh QR</button>
+<img id="qrImage" width="200"><br><br>
+<button class="primary" onclick="downloadQR()">Download QR</button>
 </div>
 
-<!-- Profile -->
+<div id="addSection" class="card" style="display:none">
+<h3>➕ Add Menu Item</h3>
+<input id="name" placeholder="Item Name">
+<input id="price" type="number" placeholder="Price">
+<input type="file" id="imgFile" accept="image/*">
+<input id="imgUrl" placeholder="Or paste image URL">
+<label><input type="checkbox" id="bestSeller"> Best Seller</label>
+<button class="primary" onclick="addMenu()">Add Item</button>
+</div>
+
+<div id="recordSection" class="card" style="display:none">
+<h3>✅ Orders</h3>
+<div id="orders"></div>
+</div>
+
 <div id="profileSection" class="card" style="display:none">
 <h3>Profile Settings</h3>
 <input id="newPass" type="password" placeholder="New Password">
 <button class="primary" onclick="changePassword()">Change Password</button><br><br>
 <button class="danger" onclick="logout()">Logout</button>
 </div>
+
+<div id="menuListSection" class="card">
+<h3>📋 Menu List</h3>
+<div id="menuListMain"></div>
+</div>
 </div>
 </div>
 
 <script>
 let token=localStorage.getItem("token");
+let sidebarVisible=false;
+let menuData=[];
 
-// LOGIN
 function login(){
   const username=document.getElementById("username").value;
   const password=document.getElementById("password").value;
   fetch("/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})})
-  .then(r=>r.json()).then(data=>{ 
-    if(data.token){token=data.token; localStorage.setItem("token",token); showDashboard();} 
-    else alert("Login failed"); 
-  });
+  .then(r=>r.json()).then(data=>{ if(data.token){token=data.token; localStorage.setItem("token",token); showDashboard();} else alert("Login failed"); });
 }
 
-// DASHBOARD
 function showDashboard(){
   document.getElementById("loginForm").style.display="none";
   document.getElementById("dashboard").style.display="flex";
-  showSection('ordersSection',document.querySelector('.sidebar-btn.active'));
-  loadOrdersToday();
-  loadMenuItems();
-}
-function showSection(id,btn){
-  ['ordersSection','menuSection','qrSection','profileSection'].forEach(s=>document.getElementById(s).style.display='none');
-  document.getElementById(id).style.display='block';
-  document.querySelectorAll('.sidebar-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
+  generateQR(); loadMenu(); loadOrders(); hideAllSections();
 }
 
-// LOGOUT
+function toggleSidebarMenu(){sidebarVisible=!sidebarVisible; document.getElementById("sidebarButtons").style.display=sidebarVisible?"flex":"none";}
+function showSection(id){hideAllSections(); document.getElementById(id).style.display="block";}
+function hideAllSections(){['qrSection','addSection','recordSection','profileSection'].forEach(s=>document.getElementById(s).style.display="none");}
+
+function changePassword(){ const newPass=document.getElementById("newPass").value; fetch("/change-password",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({password:newPass})}).then(()=>alert("Password changed"));}
 function logout(){localStorage.removeItem("token"); location.reload();}
 
-// PROFILE
-function changePassword(){ 
-  const newPass=document.getElementById("newPass").value; 
-  fetch("/change-password",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({password:newPass})})
-  .then(()=>alert("Password changed"));
-}
+function generateQR(){const qrData=window.location.origin+"/"; document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(qrData);}
+function downloadQR(){const link=document.createElement("a"); link.href=document.getElementById("qrImage").src; link.download="GoBeyondCafe-QR.png"; link.click();}
 
-// ORDERS
-function loadOrdersToday(){ 
-  fetch("/orders?filter=today",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{ 
-    const div=document.getElementById("ordersToday"); div.innerHTML=""; 
-    data.forEach(order=>{ 
-      let items=""; order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`); 
-      div.innerHTML+=`<div class="card"><strong>${order.customer}</strong><br>${items}Total: ₱${order.total}<br><small>${order.time}</small><br><button class="success" onclick="markDone(${order.id})">Mark as Done</button></div>`; 
-    }); 
-  });
+async function addMenu(){
+  let img="";
+  if(document.getElementById("imgFile").files[0]) img=await toBase64(document.getElementById("imgFile").files[0]);
+  else if(document.getElementById("imgUrl").value) img=document.getElementById("imgUrl").value;
+  else {alert("Add image"); return;}
+  const best = document.getElementById("bestSeller").checked;
+  fetch("/menu",{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({name:document.getElementById("name").value,price:document.getElementById("price").value,img,best})}).then(loadMenu);
 }
-function markDone(id){
-  fetch("/order/status/"+id,{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({status:'done'})})
-  .then(()=>loadOrdersToday());
-}
+function toBase64(file){return new Promise(res=>{let reader=new FileReader();reader.readAsDataURL(file);reader.onload=()=>res(reader.result);});}
 
-// MENU
-function loadMenuItems(){
-  fetch("/menu",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{
-    const div=document.getElementById("menuList"); div.innerHTML="";
-    data.forEach(item=>{
-      div.innerHTML+=`<div class="menu-item"><img src="${item.img}"><span>${item.name} - ₱${item.price}</span><button class="danger" onclick="deleteMenu(${item.id})">Delete</button></div>`;
-    });
-  });
-}
-function deleteMenu(id){fetch("/menu/"+id,{method:"DELETE",headers:{Authorization:token}}).then(loadMenuItems());}
+function loadMenu(){ fetch("/menu").then(r=>r.json()).then(data=>{menuData=data; const divMain=document.getElementById("menuListMain"); divMain.innerHTML=""; data.forEach(item=>{ divMain.innerHTML+=`<div class="menu-item"><div class="flex"><img src="${item.img}"><span>${item.name} - ₱${item.price}</span></div><div><label>Best <input type="checkbox" ${item.best?'checked':''} onchange="toggleBest(${item.id},this.checked)"></label><button class="danger" onclick="deleteMenu(${item.id})">Delete</button></div></div>`; }); }); }
+function toggleBest(id,best){fetch("/menu/best/"+id,{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({best})}).then(loadMenu);}
+function deleteMenu(id){fetch("/menu/"+id,{method:"DELETE",headers:{Authorization:token}}).then(loadMenu);}
 
-// QR
-function generateQR(){document.getElementById("qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(window.location.origin+"/");}
+function loadOrders(){ fetch("/orders",{headers:{Authorization:token}}).then(r=>r.json()).then(data=>{ const div=document.getElementById("orders"); div.innerHTML=""; data.forEach(order=>{ let items=""; order.items.forEach(i=>items+=`${i.name} x${i.qty}<br>`); div.innerHTML+=`<div class="card"><strong>${order.customer}</strong><br>${items}Total: ₱${order.total}<br><button class="success" onclick="updateOrder(${order.id},'done')">Done</button><button class="danger" onclick="updateOrder(${order.id},'rejected')">Reject</button></div>`; }); });}
+function updateOrder(id,status){ fetch("/order/status/"+id,{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({status})}).then(loadOrders);}
 
 if(token) showDashboard();
 </script>
