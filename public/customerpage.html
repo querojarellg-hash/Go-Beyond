@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,148 +7,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 <style>
-body {
-    margin: 0;
-    font-family: Poppins,sans-serif;
-    background: #f4f1ed;
-    text-align: center;
-}
-header {
-    background: #3e2723;
-    color: white;
-    padding: 20px;
-    text-align: center;
-}
-.screen {
-    display: none;
-    padding: 20px;
-    text-align: center;
-}
-.screen.active {
-    display: block;
-}
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 20px;
-    justify-content: center;
-    margin: 0 auto;
-    max-width: 800px;
-}
-.card {
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 6px 15px rgba(0,0,0,.1);
-    text-align: center;
-}
-.card img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-}
-.card button {
-    background: white;
-    color: #c49a6c;
-    border: 2px solid #c49a6c;
-    padding: 8px 16px;
-    border-radius: 8px;
-    margin: 10px 0;
-    cursor: pointer;
-    transition: 0.3s;
-}
-.card button:hover {
-    background: #c49a6c;
-    color: white;
-}
-.cart {
-    background: white;
-    margin: 20px auto;
-    padding: 20px;
-    border-radius: 15px;
-    max-width: 500px;
-    text-align: center;
-}
-.cart input {
-    width: 80%;
-    padding: 8px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-}
-.cart button.type-btn {
-    background: white;
-    color: #c49a6c;
-    border: 2px solid #c49a6c;
-    padding: 8px 16px;
-    margin: 5px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-.cart button.type-btn.active {
-    background: #c49a6c;
-    color: white;
-}
-.cart ul {
-    list-style: none;
-    padding: 0;
-    text-align: center;
-}
-.cart ul li button {
-    background: white;
-    color: #c49a6c;
-    border: 2px solid #c49a6c;
-    border-radius: 5px;
-    padding: 2px 6px;
-    margin-left: 10px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-.cart ul li button:hover {
-    background: #c49a6c;
-    color: white;
-}
-/* Wallet Buttons */
-.wallet-container {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-top: 10px;
-}
-button.wallet {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.3s;
-    border: none;
-    color: white;
-}
-button.wallet img {
-    height: 24px;
-}
-/* Official Brand Colors */
-button.gcash {
-    background: #0072CE; /* GCash blue */
-}
-button.gcash:hover {
-    background: #005EA2;
-}
-button.paymaya {
-    background: #00C853; /* PayMaya green */
-}
-button.paymaya:hover {
-    background: #009E44;
-}
-button:hover {
-    opacity: 0.9;
-}
+body{margin:0;font-family:Poppins,sans-serif;background:#f4f1ed;}
+header{background:#3e2723;color:white;padding:20px;text-align:center;}
+.screen{display:none;padding:20px;}
+.screen.active{display:block;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;}
+.card{background:white;border-radius:15px;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,.1);text-align:center;}
+.card img{width:100%;height:150px;object-fit:cover;}
+.card button{background:#c49a6c;color:white;border:none;padding:8px 16px;border-radius:8px;margin:10px 0;cursor:pointer;}
+.cart{background:white;margin:20px;padding:20px;border-radius:15px;}
+ul{list-style:none;padding:0;}
+button.wallet{background:#4caf50;color:white;border:none;padding:8px 16px;border-radius:8px;margin:10px 5px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -171,22 +41,15 @@ button:hover {
 <div class="cart">
 <h3>Your Order</h3>
 <input id="name" placeholder="Your Name">
-<br>
-<button class="type-btn" onclick="setType('Dine In', this)">Dine In</button>
-<button class="type-btn" onclick="setType('Take Out', this)">Take Out</button>
+<button onclick="setType('Dine In')">Dine In</button>
+<button onclick="setType('Take Out')">Take Out</button>
 <ul id="list"></ul>
 <h3>Total: ₱<span id="total">0</span></h3>
 <button onclick="checkout()">Send Order (Cash)</button>
 <br>
 <h4>Or Pay Online:</h4>
-<div class="wallet-container">
-<button class="wallet gcash" onclick="payWallet('GCash')">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/3/33/GCash_logo.png" alt="GCash"> GCash
-</button>
-<button class="wallet paymaya" onclick="payWallet('PayMaya')">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/PayMaya_Logo.png" alt="PayMaya"> PayMaya
-</button>
-</div>
+<button class="wallet" onclick="payWallet('GCash')">GCash</button>
+<button class="wallet" onclick="payWallet('PayMaya')">PayMaya</button>
 </div>
 </div>
 
@@ -199,24 +62,15 @@ function startOrdering(){
   loadMenu();
 }
 
-// Example menu data (replace with fetch("/menu") for real server)
-menu = [
-    {id:1, name:"Coffee", price:120, img:"https://via.placeholder.com/200x150"},
-    {id:2, name:"Cake", price:150, img:"https://via.placeholder.com/200x150"},
-    {id:3, name:"Sandwich", price:100, img:"https://via.placeholder.com/200x150"}
-];
-
 function loadMenu(){
+  fetch("/menu").then(r=>r.json()).then(data=>{
+    menu=data;
     const div=document.getElementById("menu");
     div.innerHTML="";
     menu.forEach((m,i)=>{
-      div.innerHTML+=`<div class="card">
-        <img src="${m.img}">
-        <h3>${m.name}</h3>
-        <p>₱${m.price}</p>
-        <button onclick="add(${i})">Add</button>
-      </div>`;
+      div.innerHTML+=`<div class="card"><img src="${m.img}"><h3>${m.name}</h3><p>₱${m.price}</p><button onclick="add(${i})">Add</button></div>`;
     });
+  });
 }
 
 function add(i){
@@ -246,30 +100,20 @@ function remove(id){
   updateCart();
 }
 
-function setType(t, btn){
-    type = t;
-    document.querySelectorAll(".type-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-}
+function setType(t){type=t; alert("Selected: "+t);}
 
 function checkout(){
   const customer=document.getElementById("name").value;
   if(!customer||!type||cart.length===0){alert("Fill all details"); return;}
-  alert("Order sent! (Cash)"); 
-  cart=[]; updateCart(); resetType();
+  fetch("/order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customer,type,items:cart,total,payment:"Cash"})})
+  .then(()=>{alert("Order sent!"); cart=[]; updateCart();});
 }
 
 function payWallet(wallet){
   const customer=document.getElementById("name").value;
   if(!customer||!type||cart.length===0){alert("Fill all details"); return;}
-  alert("Order sent via "+wallet);
-  cart=[]; updateCart(); resetType();
-}
-
-function resetType(){
-    type="";
-    document.querySelectorAll(".type-btn").forEach(b=>b.classList.remove("active"));
-    document.getElementById("name").value="";
+  fetch("/order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customer,type,items:cart,total,payment:wallet})})
+  .then(()=>{alert("Order sent via "+wallet); cart=[]; updateCart();});
 }
 </script>
 </body>
